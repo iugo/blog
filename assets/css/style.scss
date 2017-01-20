@@ -1,0 +1,12 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+code.highlighter-rouge {
+  color: rgba(21, 21, 21, 0.55);
+  background-color: rgba(198, 234, 250, 0.2);
+  border: 1px solid rgba(0, 102, 153, 0.2);
+  border-radius: 3px;
+  padding: 1px 2px;
+}
