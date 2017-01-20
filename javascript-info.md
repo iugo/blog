@@ -1,65 +1,66 @@
 ## JavaScript Reference
 
-### Array 数组方法
 
+### Array 数组方法
+ 
 #### 复制 (返回字符串)
 `.join()` 将数组转为字符串, 返回字符串.
-[参考](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/join)
+[参考](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/join)  
 `.toString()` 将数组转为字符串, 返回字符串.
 
 #### 复制 (返回新数组)
-`.slice(begin[, end])`  复制该数组(或一部分), 返回新数组.
+`.slice(begin[, end])`  复制该数组(或一部分), 返回新数组.  
 `.concat(...new)` 将值或数组合并为新数组, 返回新数组.
 
 #### 操作元素 (修改原数组)
-`.unshift(...new)` 增加元素到数组开头, 返回数组新的长度.
+`.unshift(...new)` 增加元素到数组开头, 返回数组新的长度.  
 `.push(...new)` 增加元素到数组末尾, 返回数组新的长度.
-[参考](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/push)
-`.shift()` 删除首个元素, 返回被删除元素的值.
-`.pop()` 删除最末元素, 返回被删除元素的值.
+[参考](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/push)  
+`.shift()` 删除首个元素, 返回被删除元素的值.  
+`.pop()` 删除最末元素, 返回被删除元素的值.  
 `.splice(start, deleteCount, ...new)`
 修改数组中的元素, 返回被删除元素组成的数组.
-[参考](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/splice)
-`.copyWithin(start, a, b)` 从 start 位置开始覆盖为索引 a, b 区间的值. [ES6] [参考](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/copyWithin)
+[参考](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/splice)  
+`.copyWithin(start, a, b)` 从 start 位置开始覆盖为索引 a, b 区间的值. [ES6] [参考](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/copyWithin)  
 `.fill(v, a, b)` 将索引 a, b 区间的值覆盖为 v. [ES6] [参考](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/fill)
 
 #### 操作索引 (修改原数组)
-`.reverse()` 反向数组索引, 返回该数组.
-`.sort([callback])` 默认按照字符串序列修改数组索引, 返回该数组.
+`.reverse()` 反向数组索引, 返回该数组.  
+`.sort([callback])` 默认按照字符串序列修改数组索引, 返回该数组.  
 
 #### 遍历
-`.forEach(callback)` 遍历数组, 期间无法终止.
-`.some(callback)` 遍历数组, 直到返回 true.
-`.every(callback)` 遍历数组, 直到返回 false.
-`.find(callback)` 遍历数组, 直到返回 true, 返回该值. [ES6]
-`.findIndex(callback)` 遍历数组, 直到返回 true, 返回该索引. [ES6]
+`.forEach(callback)` 遍历数组, 期间无法终止.  
+`.some(callback)` 遍历数组, 直到返回 true.  
+`.every(callback)` 遍历数组, 直到返回 false.  
+`.find(callback)` 遍历数组, 直到返回 true, 返回该值. [ES6]   
+`.findIndex(callback)` 遍历数组, 直到返回 true, 返回该索引. [ES6]  
 `.map(callback)` 遍历数组, 将每个返回值组成一个新数组返回.
-`.filter(callback)` 遍历数组, 将返回值为 true 的值组成一个新数组返回.
-`.reduce(callback, init)` 遍历数组, 返回最终返回值.
+`.filter(callback)` 遍历数组, 将返回值为 true 的值组成一个新数组返回.  
+`.reduce(callback, init)` 遍历数组, 返回最终返回值.  
 `.reduceRight(callback, init)` 反向遍历数组, 返回最终返回值.
 
 #### 查找(特殊遍历)
-`.indexOf()` 遍历数组查找是否有匹配项, 返回第一个匹配项的索引.
-`.lastIndexOf()` 遍历数组查找是否有匹配项, 返回最后一个匹配项的索引.
+`.indexOf()` 遍历数组查找是否有匹配项, 返回第一个匹配项的索引.  
+`.lastIndexOf()` 遍历数组查找是否有匹配项, 返回最后一个匹配项的索引.  
 `.includes()` 遍历数组查找是否有匹配项, 返回布尔值. [ES7]
 
 #### 其他
-`.entries()` 根据数组返回一个包含 k+v 的迭代器. [ES6]
-`.keys()` 根据数组返回一个包含 key 的迭代器. [ES6]
-`.values()` 根据数组返回一个包含 value 的迭代器. [ES6]
+`.entries()` 根据数组返回一个包含 k+v 的迭代器. [ES6]  
+`.keys()` 根据数组返回一个包含 key 的迭代器. [ES6]  
+`.values()` 根据数组返回一个包含 value 的迭代器. [ES6]  
 `.toLocaleString()` 根据本地信息将数组转为字符串, 返回字符串. [ES2017]
 
 ### String 字符串方法
 
-`.localeCompare(str[, loc[, opt]])` 根据语言为两个字符排序(中文按照拼音排). [参考](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare)
+`.localeCompare(str[, loc[, opt]])` 根据语言为两个字符排序(中文按照拼音排). [参考](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare)  
 `.split()` 拆分字符串, 返回将所有匹配值放入的数组.
 
 #### 编码
-`String.raw()` 根据模板创建字符串. [ES6]
-`String.fromCharCode(...num)` 根据 Unicode 数字序列(最大16位)创建字符串.
-`String.fromCodePoint(...num)` 根据 Unicode 点序列(不限位数)创建字符串. [ES6]
-`.charCodeAt(pos)` 返回 16 进制编码单元最后的 Unicode 序列.
-`.codePointAt(pos)` 返回 Unicode 序列. [ES6]
+`String.raw()` 根据模板创建字符串. [ES6]  
+`String.fromCharCode(...num)` 根据 Unicode 数字序列(最大16位)创建字符串.  
+`String.fromCodePoint(...num)` 根据 Unicode 点序列(不限位数)创建字符串. [ES6]  
+`.charCodeAt(pos)` 返回 16 进制编码单元最后的 Unicode 序列.  
+`.codePointAt(pos)` 返回 Unicode 序列. [ES6]  
 `.normalize([ops])` 返回 Unicode 标准化之后的字符串. [ES6]
 ```
 String.fromCharCode(128529).codePointAt()
@@ -71,40 +72,40 @@ String.fromCodePoint(194564).normalize().codePointAt()
 ```
 
 #### 处理 (并返回新字符串)
-`.charAt(pos)` 从字符串指定位置返回.
-`.slice(start[, end])` 截取字符串的一部分返回.
-`.substr(start[, length ])` 截取字符串的一部分返回.
-`.substring(pos, [pos])` 截取字符串的一部分返回([不建议](http://www.bennadel.com/blog/2159-using-slice-substring-and-substr-in-javascript.htm "与 Ben Nadel 所见略同")).
-`.concat(...str)` 按顺序拼接多个字符串为一个新字符串并返回.
-`.repeat(num)` 重复字符串 num 次为一个新字符串并返回. [ES6]
+`.charAt(pos)` 从字符串指定位置返回.  
+`.slice(start[, end])` 截取字符串的一部分返回.  
+`.substr(start[, length ])` 截取字符串的一部分返回.  
+`.substring(pos, [pos])` 截取字符串的一部分返回([不建议](http://www.bennadel.com/blog/2159-using-slice-substring-and-substr-in-javascript.htm "与 Ben Nadel 所见略同")).  
+`.concat(...str)` 按顺序拼接多个字符串为一个新字符串并返回.  
+`.repeat(num)` 重复字符串 num 次为一个新字符串并返回. [ES6]  
 `.replace()` 普通或正则方式替换为新字符串并返回. [参考](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replace)
 
-`.toString()` 返回字符串形式.
-`.valueOf()` 返回原始值.
-`.toLowerCase()` 返回全小写.
-`.toUpperCase()` 返回全大写.
-`.toLocaleLowerCase()` 返回本地化全小写.
-`.toLocaleUpperCase()` 返回本地化全大写.
-`.trim()` 移除首尾空白字符.
-`.trimLeft()` 移除首空白字符.
+`.toString()` 返回字符串形式.  
+`.valueOf()` 返回原始值.  
+`.toLowerCase()` 返回全小写.  
+`.toUpperCase()` 返回全大写.  
+`.toLocaleLowerCase()` 返回本地化全小写.  
+`.toLocaleUpperCase()` 返回本地化全大写.  
+`.trim()` 移除首尾空白字符.  
+`.trimLeft()` 移除首空白字符.  
 `.trimRight()` 移除尾空白字符.
 
 #### 搜索
-`.includes(str[, pos])` 搜索字符串是否在任意位置, 返回布尔. [ES6]
-`.startsWith(str[, pos])` 搜索字符串是否在指定开始位置, 返回布尔. [ES6]
-`.endsWith(str[, pos])` 搜索字符串是否在指定结束位置, 返回布尔. [ES6]
-`.indexOf(str[, pos])` 搜索字符串是否在任意位置, 返回最后匹配的索引.
-`.lastIndexOf(str[, pos])` 搜索字符串是否在任意位置, 返回最先匹配的索引.
-`.search(regexp)` 搜索字符串, 返回首次匹配的索引.
+`.includes(str[, pos])` 搜索字符串是否在任意位置, 返回布尔. [ES6]  
+`.startsWith(str[, pos])` 搜索字符串是否在指定开始位置, 返回布尔. [ES6]  
+`.endsWith(str[, pos])` 搜索字符串是否在指定结束位置, 返回布尔. [ES6]  
+`.indexOf(str[, pos])` 搜索字符串是否在任意位置, 返回最后匹配的索引.  
+`.lastIndexOf(str[, pos])` 搜索字符串是否在任意位置, 返回最先匹配的索引.  
+`.search(regexp)` 搜索字符串, 返回首次匹配的索引.  
 `.match(regexp)` 搜索字符串, 返回将所有匹配值放入的数组.
 
 #### HTML
-`.anchor(name)` 创建 a 标签指向一个锚点.
+`.anchor(name)` 创建 a 标签指向一个锚点.  
 `.link(url)` 创建 a 标签指向一个链接.
 
 ### Function 函数方法
 
-`.apply(thisArg[, argsArray])` 指定 this, 添加参数.
+`.apply(thisArg[, argsArray])` 指定 this, 添加参数.  
 `.call(thisArg[, arg1[, arg2[, ...]]])` 指定 this, 添加参数.
 
 `.bind(thisArg[, arg1[, arg2[, ...]]])` 创建新的函数
@@ -117,7 +118,7 @@ String.fromCodePoint(194564).normalize().codePointAt()
 
 ### 函数
 
-`parseInt(string, radix)` 返回(10进制的)整数型
+`parseInt(string, radix)` 返回(10进制的)整数型  
 `Number.prototype.toString([radix])` 转为其他类型如二进制
 
 ### 正则
@@ -126,11 +127,11 @@ String.fromCodePoint(194564).normalize().codePointAt()
 
 ## Web APIs
 
-`window.btoa()` Base64 编码
+`window.btoa()` Base64 编码  
 `window.atob()` Base64 解码
 
 #### [WHATWG HTML Living Standard]
-`window.setInterval()` 每隔一段时间调用函数. 使用 `clearInterval(intervalID)` 撤销.
+`window.setInterval()` 每隔一段时间调用函数. 使用 `clearInterval(intervalID)` 撤销.  
 `window.setTimeout()` 延迟调用函数. 使用
 `clearTimeout(intervalID)` 撤销.
 
