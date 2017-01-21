@@ -3,10 +3,14 @@
 
 @import "{{ site.theme }}";
 
+.wrapper {
+  width: 680px;
+}
+
 code.highlighter-rouge {
-  color: rgba(21, 21, 21, 0.55);
-  background-color: rgba(198, 234, 250, 0.2);
-  border: 1px solid rgba(0, 102, 153, 0.2);
+  color: rgb(230, 230, 230);
+  background-color: rgb(58, 60, 66);
+  border: 1px solid rgb(66, 68, 72);
   border-radius: 3px;
-  padding: 1px 2px;
+  padding: 0 2px 1px;
 }
