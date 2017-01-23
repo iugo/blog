@@ -1,6 +1,5 @@
 ## JavaScript Reference
 
-
 ### Array 数组方法
  
 #### 复制 (返回字符串)
@@ -62,6 +61,7 @@
 `.charCodeAt(pos)` 返回 16 进制编码单元最后的 Unicode 序列.  
 `.codePointAt(pos)` 返回 Unicode 序列. [ES6]  
 `.normalize([ops])` 返回 Unicode 标准化之后的字符串. [ES6]
+
 ```
 String.fromCharCode(128529).codePointAt()
 // 62993 出错了
@@ -102,6 +102,21 @@ String.fromCodePoint(194564).normalize().codePointAt()
 #### HTML
 `.anchor(name)` 创建 a 标签指向一个锚点.  
 `.link(url)` 创建 a 标签指向一个链接.
+
+### Object 对象方法
+
+`Object.create()` 创建对象.  
+`Object.defineProperty()` 修改对象的一个属性.  
+`Object.defineProperties()` 修改对象的多个属性.  
+`Object.getOwnPropertyDescriptor()` 返回对象的一个属性.  
+`Object.getOwnPropertyDescriptors()` 返回对象的多个属性.
+`Object.getOwnPropertyNames()` 返回对象属性 key 为数组.  
+`Object.getOwnPropertySymbols()` 返回对象属性 key 为数组. [ES6]  
+`Object.getPrototypeOf(obj)` 返回对象原型.
+`Object.freeze(obj)` 冻结对象(让其不可被修改).
+
+`Object.assign(...obj)` 合并多个对象. [ES6]  
+`Object.is()` 是否是一个值. [ES6]
 
 ### Function 函数方法
 
