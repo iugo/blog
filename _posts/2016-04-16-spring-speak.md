@@ -1,6 +1,7 @@
 ---
 title: "春语"
-categories: "随想"
+tags:
+- "随想"
 ---
 
 来自 iCloud 备忘录.
