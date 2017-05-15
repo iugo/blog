@@ -17,9 +17,7 @@
     <div class="wrapper">
       <header {% unless site.description or site.github.project_tagline %} class="without-description" {% endunless %}>
         <h1>{{ page.title | smartify }}</h1>
-        {% if site.description or site.github.project_tagline %}
-          <p>{{ site.time | date_to_long_string }}</p>
-        {% endif %}
+        <p>{{ post.date | date: "%b %-d, %Y" }}</p>
         <p class="view"><a href="{{ site.github.repository_url }}">View the Project on GitHub <small>{{ github_name }}</small></a></p>
       </header>
       <section>
