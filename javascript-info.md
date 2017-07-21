@@ -183,6 +183,18 @@ prototype 原型的概念与类相似.
 
 ## 语法
 
+delete  
+删除(自身的)(可设置的)(没有被直接声明的)属性.  
+https://github.com/simongong/js-stackoverflow-highest-votes/blob/master/questions1-10/remove-property-from-javascript-object.md  
+可替代: 设置为 undefined 或 null
+
+in  
+检查(自身的)(或原型链上)是否有某属性.  
+仅自身的替代: Object.prototype.hasOwnProperty.call(obj, propName)
+
+for...in  
+遍历(自身的)(和原型链上的)所有可枚举属性.  
+仅自身的替代: for...of
 
 ## 基础库
 
