@@ -196,6 +196,21 @@ for...in
 遍历(自身的)(和原型链上的)所有可枚举属性.  
 仅自身的替代: for...of
 
+### 判断类型
+
+类型判断
+
+`typeof`
+undefined, boolean, number, string, function, object
+null -> object
+array -> object
+NaN -> number
+
+`instanceof`
+主要用于检查对象.
+
+`Array.isArray()`
+
 ## 基础库
 
 ## Web API
