@@ -201,15 +201,13 @@ for...in
 类型判断
 
 `typeof`
-undefined, boolean, number, string, function, object
-null -> object
-array -> object
-NaN -> number
+undefined, boolean, number, string, function, object, symbol
+null -> object 替代方法 `===`
+array -> object 替代方法 `Array.isArray()`
+NaN -> number 替代方法 `Number.isNaN()` or `Object.is()`
 
 `instanceof`
 主要用于检查对象.
-
-`Array.isArray()`
 
 ## 基础库
 
