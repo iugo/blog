@@ -33,7 +33,7 @@
 `.every(callback)` 遍历数组, 直到返回 false.  
 `.find(callback)` 遍历数组, 直到返回 true, 返回该值. [ES6]   
 `.findIndex(callback)` 遍历数组, 直到返回 true, 返回该索引. [ES6]  
-`.map(callback)` 遍历数组, 将每个返回值组成一个新数组返回.
+`.map(callback)` 遍历数组, 将每个返回值组成一个新数组返回.  
 `.filter(callback)` 遍历数组, 将返回值为 true 的值组成一个新数组返回.  
 `.reduce(callback, init)` 遍历数组, 返回最终返回值.  
 `.reduceRight(callback, init)` 反向遍历数组, 返回最终返回值.
@@ -112,7 +112,7 @@ String.fromCodePoint(194564).normalize().codePointAt()
 `Object.getOwnPropertyDescriptors()` 返回对象的多个属性.
 `Object.getOwnPropertyNames()` 返回对象属性 key 为数组.  
 `Object.getOwnPropertySymbols()` 返回对象属性 key 为数组. [ES6]  
-`Object.getPrototypeOf(obj)` 返回对象原型.
+`Object.getPrototypeOf(obj)` 返回对象原型.  
 `Object.freeze(obj)` 冻结对象(让其不可被修改).
 
 `Object.assign(...obj)` 合并多个对象. [ES6]  
@@ -208,6 +208,13 @@ NaN -> number 替代方法 `Number.isNaN()` or `Object.is()`
 
 `instanceof`
 主要用于检查对象.
+
+类型转换 ([ECMAScript 2017 标准](https://www.ecma-international.org/ecma-262/8.0/#sec-type-conversion))
+
+`Number.parseInt(string[, radix])`
+`Number.parseFloat(string)` 
+
+进制转换的时候, radix 的范围是 2~36.
 
 ## 基础库
 
