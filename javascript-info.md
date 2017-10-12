@@ -115,8 +115,9 @@ String.fromCodePoint(194564).normalize().codePointAt()
 `Object.getPrototypeOf(obj)` 返回对象原型.  
 `Object.freeze(obj)` 冻结对象(让其不可被修改).
 
-`Object.assign(...obj)` 合并多个对象. [ES6]  
-`Object.is()` 是否是一个值. [ES6]
+`w.assign(...obj)` 合并多个对象到首对象, 返回被修改过的首对象. [ES6]  
+`Object.is()` 是否是一个值. [ES6]  
+`Object.entries()` 将所有可枚举键值转化为数组. [ES2017]
 
 ### Function 函数方法
 
