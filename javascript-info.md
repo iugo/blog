@@ -210,6 +210,8 @@ NaN -> number 替代方法 `Number.isNaN()` or `Object.is()`
 `instanceof`
 主要用于检查对象.
 
+相关参考: https://www.ibm.com/developerworks/cn/web/1306_jiangjj_jsinstanceof/index.html
+
 类型转换 ([ECMAScript 2017 标准](https://www.ecma-international.org/ecma-262/8.0/#sec-type-conversion))
 
 `Number.parseInt(string[, radix])`
