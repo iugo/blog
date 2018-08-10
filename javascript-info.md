@@ -262,7 +262,7 @@ querySelectorAll // 根据 CSS 选择器返回一个 NodeList (即 element 的�
 - scroll // 页面滚动事件
 - afterscriptexecute
 
-其他时间:
+其他事件:
 
 - focus // 获得焦点事件
 - blur // 失焦事件
@@ -271,7 +271,11 @@ querySelectorAll // 根据 CSS 选择器返回一个 NodeList (即 element 的�
 - load // 载入事件
 
 Web API 中的基础事件列表: https://developer.mozilla.org/en-US/docs/Web/Events
-Web API 中的默认事件处理器列表: https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers
+
+React 合成事件列表: https://reactjs.org/docs/events.html  
+Web API 中的默认事件处理函数列表: https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers
+
+尽量避免使用全局事件处理函数去处理事件, 以防止多处对此事件的回调被覆盖.
 
 #### 自定义事件
 
