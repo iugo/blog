@@ -1,6 +1,8 @@
 ## JavaScript Reference
 
 ### Array 数组方法
+
+扩展: http://2ality.com/2012/06/dense-arrays.html
  
 #### 复制 (返回字符串)
 `.join()` 将数组转为字符串, 返回字符串.
