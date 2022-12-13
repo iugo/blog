@@ -152,6 +152,13 @@ String.fromCodePoint(194564).normalize().codePointAt()
 `parseInt(string, radix)` 返回(10进制的)整数型  
 `Number.prototype.toString([radix])` 转为其他类型如二进制
 
+### Number 数字类型及方法
+
+- `Number.MAX_SAFE_INTEGER` 保留完整精度的最大整数, 2 的 53 次方 – 1
+- `0b10` 二进制
+- `0o10` 八进制
+- `0x10` 十六进制
+
 ### 正则
 
 正则配置: g 全局(匹配所有而不是找到一个就停止), i 忽略大小学, m 多行模式
