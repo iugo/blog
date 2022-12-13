@@ -165,6 +165,13 @@ String.fromCodePoint(194564).normalize().codePointAt()
 
 ## Web APIs
 
+因为 JavaScript 中一切皆为对象, 所以 Web API 可以说是一个对象的合集. 主要的内置对象有:
+
+- window
+- document
+- Element/Node
+- Event
+
 `window.btoa()` Base64 编码  
 `window.atob()` Base64 解码
 
@@ -244,14 +251,6 @@ NaN -> number 替代方法 `Number.isNaN()` or `Object.is()`
 进制转换的时候, radix 的范围是 2~36.
 
 ## 基础库
-
-## Web API
-因为 JavaScript 中一切皆为对象, 所以 Web API 可以说是一个对象的合集. 主要的内置对象有:
-
-- window
-- document
-- Element/Node
-- Event
 
 ### Element/Node
 
