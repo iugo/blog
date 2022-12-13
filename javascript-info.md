@@ -1,19 +1,24 @@
+# JavaScript
+
 ## JavaScript Reference
 
 ### Array 数组方法
 
-扩展: http://2ality.com/2012/06/dense-arrays.html
- 
+扩展: <http://2ality.com/2012/06/dense-arrays.html>
+
 #### 复制 (返回字符串)
+
 `.join()` 将数组转为字符串, 返回字符串.
 [参考](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/join)  
 `.toString()` 将数组转为字符串, 返回字符串.
 
 #### 复制 (返回新数组)
+
 `.slice(begin[, end])`  复制该数组(或一部分), 返回新数组.  
 `.concat(...new)` 将值或数组合并为新数组, 返回新数组.
 
 #### 操作元素 (修改原数组)
+
 `.unshift(...new)` 增加元素到数组开头, 返回数组新的长度.  
 `.push(...new)` 增加元素到数组末尾, 返回数组新的长度.
 [参考](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/push)  
@@ -26,14 +31,16 @@
 `.fill(v, a, b)` 将索引 a, b 区间的值覆盖为 v. [ES6] [参考](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/fill)
 
 #### 操作索引 (修改原数组)
+
 `.reverse()` 反向数组索引, 返回该数组.  
 `.sort([callback])` 默认按照字符串序列修改数组索引, 返回该数组.  
 
 #### 遍历
+
 `.forEach(callback)` 遍历数组, 期间无法终止.  
 `.some(callback)` 遍历数组, 直到返回 true.  
 `.every(callback)` 遍历数组, 直到返回 false.  
-`.find(callback)` 遍历数组, 直到返回 true, 返回该值. [ES6]   
+`.find(callback)` 遍历数组, 直到返回 true, 返回该值. [ES6]
 `.findIndex(callback)` 遍历数组, 直到返回 true, 返回该索引. [ES6]  
 `.map(callback)` 遍历数组, 将每个返回值组成一个新数组返回.  
 `.filter(callback)` 遍历数组, 将返回值为 true 的值组成一个新数组返回.  
@@ -41,11 +48,13 @@
 `.reduceRight(callback, init)` 反向遍历数组, 返回最终返回值.
 
 #### 查找(特殊遍历)
+
 `.indexOf()` 遍历数组查找是否有匹配项, 返回第一个匹配项的索引.  
 `.lastIndexOf()` 遍历数组查找是否有匹配项, 返回最后一个匹配项的索引.  
 `.includes()` 遍历数组查找是否有匹配项, 返回布尔值. [ES7]
 
 #### 其他
+
 `.entries()` 根据数组返回一个包含 k+v 的迭代器. [ES6]  
 `.keys()` 根据数组返回一个包含 key 的迭代器. [ES6]  
 `.values()` 根据数组返回一个包含 value 的迭代器. [ES6]  
@@ -57,6 +66,7 @@
 `.split()` 拆分字符串, 返回将所有匹配值放入的数组.
 
 #### 编码
+
 `String.raw()` 根据模板创建字符串. [ES6]  
 `String.fromCharCode(...num)` 根据 Unicode 数字序列(最大16位)创建字符串.  
 `String.fromCodePoint(...num)` 根据 Unicode 点序列(不限位数)创建字符串. [ES6]  
@@ -74,6 +84,7 @@ String.fromCodePoint(194564).normalize().codePointAt()
 ```
 
 #### 处理 (并返回新字符串)
+
 `.charAt(pos)` 从字符串指定位置返回.  
 `.slice(start[, end])` 截取字符串的一部分返回.  
 `.substr(start[, length ])` 截取字符串的一部分返回.  
@@ -93,6 +104,7 @@ String.fromCodePoint(194564).normalize().codePointAt()
 `.trimRight()` 移除尾空白字符.
 
 #### 搜索
+
 `.includes(str[, pos])` 搜索字符串是否在任意位置, 返回布尔. [ES6]  
 `.startsWith(str[, pos])` 搜索字符串是否在指定开始位置, 返回布尔. [ES6]  
 `.endsWith(str[, pos])` 搜索字符串是否在指定结束位置, 返回布尔. [ES6]  
@@ -102,6 +114,7 @@ String.fromCodePoint(194564).normalize().codePointAt()
 `.match(regexp)` 搜索字符串, 返回将所有匹配值放入的数组.
 
 #### HTML
+
 `.anchor(name)` 创建 a 标签指向一个锚点.  
 `.link(url)` 创建 a 标签指向一个链接.
 
@@ -149,6 +162,7 @@ String.fromCodePoint(194564).normalize().codePointAt()
 `window.atob()` Base64 解码
 
 #### [WHATWG HTML Living Standard]
+
 `window.setInterval()` 每隔一段时间调用函数. 使用 `clearInterval(intervalID)` 撤销.  
 `window.setTimeout()` 延迟调用函数. 使用
 `clearTimeout(intervalID)` 撤销.
@@ -159,9 +173,9 @@ String.fromCodePoint(194564).normalize().codePointAt()
 
 JavaScript 的深复制讨论: [1](https://stackoverflow.com/questions/122102/what-is-the-most-efficient-way-to-clone-an-object) [2](http://jerryzou.com/posts/dive-into-deep-clone-in-javascript/)
 
-函数的括号与闭包, 将函数作为返回值时写 `foo()` 与 `foo` 的区别: https://v2ex.com/t/253164
+函数的括号与闭包, 将函数作为返回值时写 `foo()` 与 `foo` 的区别: <https://v2ex.com/t/253164>
 
-JavaScript 判断数据类型: https://segmentfault.com/q/1010000000464600 因为 JavaScript 是弱类型, 所以有些特别的类型判断. NaN 值是否可以转为数字, 通过 `isNaN()` 判断.
+JavaScript 判断数据类型: <https://segmentfault.com/q/1010000000464600> 因为 JavaScript 是弱类型, 所以有些特别的类型判断. NaN 值是否可以转为数字, 通过 `isNaN()` 判断.
 
 i++ 的用法: 和 `i = i + 1` 有一些区别, 当我们 `console.log(i = i + 1)` 的时候, 得到的是 i + 1, 但 `console.log(i++)` 的时候, 得到的是 i.
 
@@ -171,7 +185,7 @@ i++ 的用法: 和 `i = i + 1` 有一些区别, 当我们 `console.log(i = i + 1
 对 `[]` 使用 `slice()` 方法;
 对 `slice()` 使用 `call()` 方法, 将 `this` 改为了 `arguments`, 第一个参数改为 `1`.
 
-浮点误差: https://www.zhihu.com/question/20679634
+浮点误差: <https://www.zhihu.com/question/20679634>
 
 prototype 原型的概念与类相似.
 
@@ -180,6 +194,7 @@ prototype 原型的概念与类相似.
 ---
 
 ## 特点
+
 - 对象
 - 原型链
 - 单线程
@@ -188,7 +203,7 @@ prototype 原型的概念与类相似.
 
 delete  
 删除(自身的)(可设置的)(没有被直接声明的)属性.  
-https://github.com/simongong/js-stackoverflow-highest-votes/blob/master/questions1-10/remove-property-from-javascript-object.md  
+<https://github.com/simongong/js-stackoverflow-highest-votes/blob/master/questions1-10/remove-property-from-javascript-object.md>  
 可替代: 设置为 undefined 或 null
 
 in  
@@ -212,12 +227,12 @@ NaN -> number 替代方法 `Number.isNaN()` or `Object.is()`
 `instanceof`
 主要用于检查对象.
 
-相关参考: https://www.ibm.com/developerworks/cn/web/1306_jiangjj_jsinstanceof/index.html
+相关参考: <https://www.ibm.com/developerworks/cn/web/1306_jiangjj_jsinstanceof/index.html>
 
 类型转换 ([ECMAScript 2017 标准](https://www.ecma-international.org/ecma-262/8.0/#sec-type-conversion))
 
 `Number.parseInt(string[, radix])`
-`Number.parseFloat(string)` 
+`Number.parseFloat(string)`
 
 进制转换的时候, radix 的范围是 2~36.
 
@@ -238,6 +253,7 @@ Node 是 Element 的原型, 即 Element 拥有 Node 的所有属性与方法.
 Element 的集合是 HTMLCollection, Node 的集合是 NodeList. HTMLCollection 是 live 的, 而 NodeList 也可以是 non-live 的(例如 querySelectorAll).
 
 #### 选择/定位
+
 ```
 getElementById // 根据 id 返回一个合集, 对象只能是 document 而不能是 Element
 getElementsByTagName // 根据标签名返回一个合集
@@ -272,10 +288,10 @@ querySelectorAll // 根据 CSS 选择器返回一个 NodeList (即 element 的�
 - submit // 表单提交事件
 - load // 载入事件
 
-Web API 中的基础事件列表: https://developer.mozilla.org/en-US/docs/Web/Events
+Web API 中的基础事件列表: <https://developer.mozilla.org/en-US/docs/Web/Events>
 
-React 合成事件列表: https://reactjs.org/docs/events.html  
-Web API 中的默认事件处理函数列表: https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers
+React 合成事件列表: <https://reactjs.org/docs/events.html>  
+Web API 中的默认事件处理函数列表: <https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers>
 
 尽量避免使用全局事件处理函数去处理事件, 以防止多处对此事件的回调被覆盖.
 
