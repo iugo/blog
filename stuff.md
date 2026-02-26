@@ -120,6 +120,10 @@ Cherry 茶轴, 刚开始用很舒服, 但是一段时间后, 手指开始疼了.
 
 - 最佳选择 Apple Studio Display
 - 性价比之选 DELL UltraSharp U2725QE
+  - 支持画中画 (PIP)、双画面 (PBP)
+  - 支持 KVM (一套键鼠控制两台机器)
+  - Thunderbolt 4, 140 W
+  - [将 Dell UltraSharp USB-C 显示器与 Mac 配合使用](https://www.dell.com/support/kbdoc/zh-cn/000131273/)
 
 ### 车
 
