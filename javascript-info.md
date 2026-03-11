@@ -12,10 +12,12 @@
 [参考](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array/join)  
 `.toString()` 将数组转为字符串, 返回字符串.
 
-#### 复制 (返回新数组)
+#### 部分复制 (返回新数组)
 
 `.slice(begin[, end])`  复制该数组(或一部分), 返回新数组.  
 `.concat(...new)` 将值或数组合并为新数组, 返回新数组.
+`.flat()` 将二维数组平铺开
+`.flatMap()` 效果等同于 `.map().flat()` 但性能更好
 
 #### 操作元素 (修改原数组)
 
