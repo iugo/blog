@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>充电线 (Cable 传输介质) 规范与 E-Marker 机制 | USB-PD 快充生态</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/cable.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container nav-bar">
+      <a href="usb_pd_guide.html" class="logo-group">
+        <div class="logo-badge">🧵</div>
+        <div class="logo-text">
+          <h1>USB-PD 快充生态架构</h1>
+          <span>Source · Cable · Sink</span>
+        </div>
+      </a>
+      <div class="nav-actions">
+        <!-- 跨页生态切换下拉框 -->
+        <div class="cross-nav-dropdown" id="crossNavDropdown">
+          <button class="cross-nav-trigger" type="button" aria-expanded="false" aria-haspopup="true">
+            <span class="cross-nav-curr">🧵 充电线</span>
+            <span class="cross-nav-arrow">▾</span>
+          </button>
+          <div class="cross-nav-menu">
+            <div class="cross-nav-header">切换生态页面</div>
+            <a href="usb_pd_guide.html" class="cross-nav-item">
+              <span class="cross-nav-icon">⚡</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">总览指南 (Guide)</span>
+                <span class="cross-nav-desc">PD 3.x · 演进脉络与协议大全</span>
+              </div>
+            </a>
+            <a href="charger.html" class="cross-nav-item">
+              <span class="cross-nav-icon">🔌</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">供电端 (Source)</span>
+                <span class="cross-nav-desc">PDO 广播 · 握手状态机 · 消弧保护</span>
+              </div>
+            </a>
+            <a href="cable.html" class="cross-nav-item active">
+              <span class="cross-nav-icon">🧵</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">充电线 (Cable)</span>
+                <span class="cross-nav-desc">E-Marker 芯片 · 240W 安全保护机制</span>
+              </div>
+              <span class="cross-nav-status">✓</span>
+            </a>
+            <a href="device.html" class="cross-nav-item">
+              <span class="cross-nav-icon">📱</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">被充电设备 (Sink)</span>
+                <span class="cross-nav-desc">Request 决策 · 电荷泵直充与回退</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- 视觉分割线 -->
+        <div class="nav-divider" aria-hidden="true"></div>
+
+        <!-- 本页章节锚点直达 -->
+        <ul class="inpage-nav">
+          <li><a href="#cable-classification">线缆分类</a></li>
+          <li><a href="#usb-data-protocols">USB数据协议</a></li>
+          <li><a href="#why-categorized">分类成因</a></li>
+          <li><a href="#cable-terminology">术语解析</a></li>
+          <li><a href="#cable-inspector">E-Marker侦测</a></li>
+        </ul>
+
+        <button id="themeToggle" class="theme-toggle-btn" title="切换暗色/亮色模式">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">🧵 传输介质与数字身份证</div>
+      <h2>
+        充电线（Cable 传输介质）<br>
+        <span class="gradient-text">E-Marker 芯片与 240W 安全保护机制</span>
+      </h2>
+      <p>
+        在现代高功率快充中，线缆绝非仅仅是一束被动的铜线。
+        它通过内置的 E-Marker 电子标签芯片参与数字握手，决定着设备允许协商的最大功率上限，并承担着 50V 耐压与抗拉弧的物理安全保护底线。
+      </p>
+    </section>
+
+    <!-- Trio Navigation Links -->
+    <div class="trio-nav">
+      <a href="charger.html" class="trio-card">
+        <div class="trio-icon">🔌</div>
+        <div class="trio-info">
+          <h4>充电器 (Source)</h4>
+          <p>供电端 · 广播供电能力与微秒消弧</p>
+        </div>
+      </a>
+      <a href="cable.html" class="trio-card current">
+        <div class="trio-icon">🧵</div>
+        <div class="trio-info">
+          <h4>充电线 (Cable)</h4>
+          <p>当前页面 · E-Marker 芯片与 50V 耐压保护</p>
+        </div>
+      </a>
+      <a href="device.html" class="trio-card">
+        <div class="trio-icon">📱</div>
+        <div class="trio-info">
+          <h4>被充电设备 (Sink)</h4>
+          <p>受电端 · 功率决策与电荷泵直充</p>
+        </div>
+      </a>
+    </div>
+
+    <!-- Section 1: Classification First -->
+    <section id="cable-classification">
+      <h3 class="section-title">📊 现代 Type-C 充电线权威分类体系（分类先行）</h3>
+      <p class="section-subtitle">
+        选错线缆是导致快充“缩水”、充头发热甚至接口拉弧的主要根源。在深入底层术语之前，首先建立清晰、准确的现代线缆分类认知：
+      </p>
+
+      <!-- Key Deprecation Clarification Callout -->
+      <div class="callout-box callout-box-deprecate">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <h4 style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span>⚠️ 核心澄清：现在还存在“SPR 5A 线 (100W)”吗？</span>
+          </h4>
+          <span class="badge-pill badge-deprecate">官方标准已正式废止 (Deprecated)</span>
+        </div>
+        <p style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.75;">
+          <strong>直接结论：在 USB-IF 现行官方标准体系中，已经不存在“SPR 5A 线 (100W)”这一认证类别！</strong>
+          <br>USB-IF 在发布 <strong>USB Type-C Release 2.1 规范（引入 240W EPR 扩展供电体系）</strong> 时，正式做出了重大决断：
+          <strong>彻底废止（Deprecate / Phase Out）100W (20V / 5A) 线缆规范与认证</strong>！
+          <br>规范明确要求：<strong>今后所有新生产、申请 USB 官方认证的 5A 线缆，必须强制支持 EPR 240W（具备 50V 绝缘耐压与 EPR E-Marker 芯片）</strong>。
+          <br><br>
+          <strong>那市面上的 100W 线是怎么回事？</strong>
+          <br>目前市售或家中抽屉里的“100W 线”，全都是 <strong>旧 PD 3.0 时代的存量遗留产品（Legacy Stock）</strong>。
+          合规充电头和电脑读取到老款 100W 线的芯片后，出于安全保护，会<strong>严格将其锁死在 ≤100W (20V/5A)</strong>，坚决拒绝升压至 28V/36V/48V。
+        </p>
+      </div>
+
+      <!-- Core Cable Taxonomy Table -->
+      <div class="table-wrapper" style="margin-bottom: 30px;">
+        <table>
+          <thead>
+            <tr>
+              <th>线缆分类体系</th>
+              <th>标准认证状态</th>
+              <th>额定电流 / 耐压</th>
+              <th>最大供电功率</th>
+              <th>E-Marker 芯片要求</th>
+              <th>典型用途与设备生态</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>60W 标准线缆</strong></td>
+              <td><span class="badge-pill badge-active">✔️ 官方现行标准</span></td>
+              <td><strong>3.0 A</strong> / ≤20V</td>
+              <td><strong>60W</strong> (20V @ 3A)</td>
+              <td>❌ <strong>无芯片要求</strong><br>(USB 2.0 纯充线免芯片)</td>
+              <td>大众日常线。手机、iPad、Switch、无线耳机随机附赠线，充电脑最高锁死 60W。</td>
+            </tr>
+            <tr>
+              <td><strong>240W EPR 扩展线缆</strong></td>
+              <td><span class="badge-pill badge-active">✔️ 官方现行唯一 5A 标准</span></td>
+              <td><strong>5.0 A</strong> / <strong>50V 耐压</strong></td>
+              <td><strong>240W</strong> (48V @ 5A)</td>
+              <td>✔️ <strong>强制配备</strong><br>(EPR 标志位 = 1)</td>
+              <td>大功率全能线。向下通吃 65W/100W，向上独占 140W MacBook Pro 16" 及 240W 游戏本。</td>
+            </tr>
+            <tr>
+              <td><strong>100W 遗留旧线缆</strong></td>
+              <td><span class="badge-pill badge-deprecate">❌ 官方已停发新认证 (历史存量)</span></td>
+              <td>5.0 A / 20V (旧SPR)</td>
+              <td><strong>100W</strong> (20V @ 5A)</td>
+              <td>✔️ 旧版芯片 (EPR=0)</td>
+              <td>PD 3.0 时代老线。插在 140W/240W 充头上会被系统强制封锁在 100W 封顶。</td>
+            </tr>
+            <tr>
+              <td><strong>国产魔改闪充线 / UFCS 线</strong></td>
+              <td><span class="badge-pill badge-china">🇨🇳 厂商私有 & UFCS标准</span></td>
+              <td><strong>6.0A ~ 10.0A</strong> / 20V</td>
+              <td><strong>80W ~ 120W ~ 240W</strong></td>
+              <td>✔️ 私有加密芯片 / A口第5针</td>
+              <td>小米 120W、OPPO 100W/240W、vivo 120W 原装粗线及 UFCS 认证线。突破 5A 极限。</td>
+            </tr>
+            <tr>
+              <td><strong>雷电4 / USB4 全功能线</strong></td>
+              <td><span class="badge-pill badge-active">✔️ 顶级传输标准</span></td>
+              <td>5.0 A / 50V 耐压</td>
+              <td><strong>240W</strong> (48V @ 5A)</td>
+              <td>✔️ 双端双芯片 (SOP'/SOP'')</td>
+              <td>同轴高屏蔽线。兼具 <strong>40Gbps/80Gbps 高速数据 + 8K 视频 + 240W 满血供电</strong>。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Two-Dimensional Orthogonal Decoupling Callout -->
+      <div class="callout-box">
+        <h4 style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          <span>📐 认知升级：供电功率 (Power) 与 数据速率 (Data) 的“二维正交解耦”</span>
+        </h4>
+        <p style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px;">
+          许多消费者误以为“240W 线一定是又粗又硬的雷电线”，或者“能传 40G 视频的线才能充 100W”。
+          事实上，USB 规范在物理层将<strong>“供电能力”</strong>与<strong>“数据带宽”</strong>设计为完全独立、互不相干的两个正交维度：
+        </p>
+        <div class="grid-2">
+          <div class="callout-subcard">
+            <div style="font-weight: 700; color: var(--accent-purple); margin-bottom: 6px;">⚡ 供电维度（取决于线芯横截面积 & E-Marker）</div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+              只关心 VBUS 与 GND 两根主要导线的纯铜横截面积（AWG 线规）以及芯片报文中的电流耐压参数。
+              哪怕线身内部<strong>只焊了 USB 2.0 的两根细差分线</strong>，只要 VBUS 铜线够粗且芯片通过 50V 认证，它就是一根百分之百合规的 <strong>240W 满血快充线</strong>（例如苹果原装 2 米 MagSafe/USB-C 编织线）。
+            </p>
+          </div>
+          <div class="callout-subcard">
+            <div style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px;">🚀 数据维度（取决于高频同轴线对 & 屏蔽工艺）</div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+              取决于插头内是否焊齐了 4 对高速差分屏蔽线（TX1/RX1, TX2/RX2）以及抗电磁干扰的编织屏蔽网。
+              即使一根标定 40Gbps 的雷电线，如果内部只配置了 3A 芯片，它也仅仅是一根 <strong>60W 供电线</strong>。供电与数据完全解耦！
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: USB Data Protocols (USB 2.0 / USB 3.x / USB4 / USB 5) -->
+    <section id="usb-data-protocols">
+      <h3 class="section-title">🚀 线材的 USB 数据协议进化：USB 2 · USB 3 · USB 4 · USB 5 (USB4 2.0)</h3>
+      <p class="section-subtitle">
+        从 480 Mbps 基础慢速到 120 Gbps 极速爆发。在同一物理 Type-C 外形下，拆解数据协议代际、内部物理线芯阉割、PAM3 调制飞跃与选购避坑：
+      </p>
+
+      <!-- Data Protocol Master Table -->
+      <div class="table-wrapper" style="margin-bottom: 30px;">
+        <table>
+          <thead>
+            <tr>
+              <th>协议世代与标准名称</th>
+              <th>USB-IF 最新官方标识</th>
+              <th>理论带宽与实测吞吐</th>
+              <th>内部物理线芯结构</th>
+              <th>信号调制与编码技术</th>
+              <th>视频 / PCIe 隧道能力</th>
+              <th>线缆最大被动长度</th>
+              <th>典型设备与适用场景</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <strong>USB 2.0</strong><br>
+                <small style="color:var(--text-muted);">High-Speed 经典协议</small><br>
+                <span class="speed-tag speed-tag-20">480 Mbps</span>
+              </td>
+              <td><span class="badge-pill badge-active">USB 480Mbps</span></td>
+              <td><strong>480 Mbps</strong><br><small style="color:var(--text-muted);">实测约 35 ~ 43 MB/s</small></td>
+              <td>仅 <strong>4~5 根纯铜线芯</strong><br><small style="color:var(--accent-rose);">完全阉割 8 根高速差分线</small></td>
+              <td>NRZ 二电平编码<br>(半双工 D+/D-)</td>
+              <td>❌ <strong>无任何视频/PCIe能力</strong><br>无法外接显示器</td>
+              <td>最长可达 <strong>2m ~ 3m</strong><br>极细极软、发热极小</td>
+              <td><strong>市售 90% 纯充电线</strong>。手机/iPad随机附赠线、床头充电线。即使支持 240W 供电也多为此数据规格。</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>USB 3.2 Gen 1</strong><br>
+                <small style="color:var(--text-muted);">原 USB 3.0 / 3.1 Gen 1</small><br>
+                <span class="speed-tag speed-tag-5g">SuperSpeed 5Gbps</span>
+              </td>
+              <td><span class="badge-pill badge-active">USB 5Gbps</span></td>
+              <td><strong>5.0 Gbps</strong><br><small style="color:var(--text-muted);">实测约 440 ~ 460 MB/s</small></td>
+              <td>9~14 根芯线<br>增加 2 对高速屏蔽差分线 (TX1/RX1)</td>
+              <td>8b/10b 编码<br>(全双工 5GHz 物理层)</td>
+              <td>✔️ <strong>DP 1.2 Alt Mode</strong><br>(支持 4K 30Hz / 1080P)</td>
+              <td>建议 ≤ <strong>1.5m ~ 2.0m</strong></td>
+              <td>常规高速 U 盘、SATA 协议移动硬盘盒、基础办公 Type-C 扩展坞连接线。</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>USB 3.2 Gen 2</strong><br>
+                <small style="color:var(--text-muted);">原 USB 3.1 Gen 2 / 10G</small><br>
+                <span class="speed-tag speed-tag-10g">SuperSpeed 10Gbps</span>
+              </td>
+              <td><span class="badge-pill badge-active">USB 10Gbps</span></td>
+              <td><strong>10.0 Gbps</strong><br><small style="color:var(--text-muted);">实测约 1000 ~ 1050 MB/s</small></td>
+              <td>16 根芯线，高屏蔽同轴/双绞线，需完整 SBU 引脚</td>
+              <td>128b/132b 编码<br>(大幅压低冗余开销至3%)</td>
+              <td>✔️ <strong>DP 1.4 Alt Mode</strong><br>(单线 4K 60Hz HDR / 2K 144Hz)</td>
+              <td>建议 ≤ <strong>1.0m</strong><br>(超长需主动芯片)</td>
+              <td>主流 NVMe 移动固态硬盘 (PSSD)、4K 显示器直连线、iPhone 15 Pro / 16 Pro 机身高速传输口。</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>USB 3.2 Gen 2x2</strong><br>
+                <small style="color:var(--text-muted);">双通道 20G 特化模式</small><br>
+                <span class="speed-tag speed-tag-20g">SuperSpeed 20Gbps</span>
+              </td>
+              <td><span class="badge-pill badge-legacy">USB 20Gbps</span></td>
+              <td><strong>20.0 Gbps</strong><br><small style="color:var(--text-muted);">实测约 2000 MB/s</small></td>
+              <td>强制要求 <strong>4 对高速差分线全通</strong><br>(TX1/RX1 + TX2/RX2 并行)</td>
+              <td>128b/132b 双通道绑定</td>
+              <td>⚠️ <strong>无法做全功能视频</strong><br>(差分线全被占用，Mac原生不支持)</td>
+              <td>建议 ≤ <strong>1.0m</strong></td>
+              <td>特定高端 Windows 台式机主板与专属 20Gbps 移动固态硬盘。生态较为碎片化。</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>USB4 (Gen 3x2)</strong><br>
+                <small style="color:var(--text-muted);">兼容雷电3 / 雷电4</small><br>
+                <span class="speed-tag speed-tag-40g">USB4 40Gbps</span>
+              </td>
+              <td><span class="badge-pill badge-active">USB 40Gbps / ⚡4</span></td>
+              <td><strong>40.0 Gbps</strong><br><small style="color:var(--text-muted);">实测约 3000 ~ 3200 MB/s</small></td>
+              <td>16~24 根微同轴线芯 (Coaxial)<br><strong>强制双端 E-Marker 芯片</strong></td>
+              <td><strong>协议隧道技术 (Tunneling)</strong><br>动态混合封装 PCIe/DP/USB</td>
+              <td>✔️ <strong>PCIe 3.0 x4 (32G) + DP 2.0</strong><br>支持 8K 屏、eGPU 外接显卡坞</td>
+              <td>被动线 ≤ <strong>0.8m ~ 1.0m</strong><br>>1m 须为 Retimer 主动线</td>
+              <td>MacBook Pro、ThinkPad 旗舰本、雷电4 拓展坞、40G 顶级固态硬盘盒、专业音视频创作者主线。</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>USB4 Version 2.0</strong><br>
+                <small style="color:var(--accent-purple);">行业俗称 <strong>"USB 5"</strong> · 协同雷电5</small><br>
+                <span class="speed-tag speed-tag-80g">80Gbps / 120Gbps PAM3</span>
+              </td>
+              <td><span class="badge-pill badge-active" style="background:linear-gradient(135deg,rgba(236,72,153,0.2),rgba(139,92,246,0.2));color:#f472b6;border-color:rgba(236,72,153,0.4);">USB 80Gbps / ⚡5</span></td>
+              <td>
+                <strong>80 Gbps</strong> (对等双向)<br>
+                <strong>120 Gbps</strong> (非对称视频爆发)<br>
+                <small style="color:var(--text-muted);">PCIe 4.0 吞吐达 64 Gbps (实测 >6GB/s)</small>
+              </td>
+              <td>高频极细微同轴线，低介电绝缘层，全新 Gen 4 E-Marker</td>
+              <td>
+                🚀 <strong>革命性 PAM3 脉冲调制</strong><br>
+                (三电平 -1/0/+1，单周期 1.58 bit)
+              </td>
+              <td>
+                ✔️ <strong>PCIe 4.0 x4 + DP 2.1 (UHBR20)</strong><br>
+                驱动三路 4K 144Hz 或双路 8K 120Hz
+              </td>
+              <td>
+                被动线 ≤ <strong>1.0m</strong><br>
+                长距离采用主动光缆 (AOC) / Retimer
+              </td>
+              <td><strong>2024~2026 旗舰工作站与超算外设</strong>。雷电5 硬盘阵列柜、桌面级外置显卡满血直驱、高刷专业工程设计显示群。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- In-Depth Technical Cards (Pinout Physical Difference & PAM3 Breakdown) -->
+      <div class="grid-2" style="margin-bottom: 30px;">
+        <!-- Card 1: Physical Pinout & Wire Cross-Section -->
+        <div class="card">
+          <h3 style="display:flex; align-items:center; gap:8px;">
+            <span>🔬 物理层解剖：为什么 240W 充电线经常只有 USB 2.0？</span>
+          </h3>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+            Type-C 物理接口标准拥有完整的 24 根金属触针。但在量产制造中，<strong>厂家为了让线身柔软轻便并大幅降低成本，会物理剔除绝大部分高速引脚</strong>：
+          </p>
+
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 12px;">
+            <div style="font-size: 0.78rem; font-weight:700; color: var(--accent-rose); margin-bottom: 6px;">❌ 纯充电线 (USB 2.0 · 无论 60W 还是 240W)：物理阉割 16 根针</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px;">插头仅接线：GND(4) + VBUS(4) + CC(1) + D+/D-(2) = <strong>仅 4~5 根导线</strong></div>
+            <div class="pin-row">
+              <span class="pin-chip pin-gnd">GND</span>
+              <span class="pin-chip pin-empty">TX1+</span>
+              <span class="pin-chip pin-empty">TX1-</span>
+              <span class="pin-chip pin-vbus">VBUS</span>
+              <span class="pin-chip pin-cc">CC</span>
+              <span class="pin-chip pin-dpdm">D+</span>
+              <span class="pin-chip pin-dpdm">D-</span>
+              <span class="pin-chip pin-empty">SBU1</span>
+              <span class="pin-chip pin-vbus">VBUS</span>
+              <span class="pin-chip pin-empty">RX2-</span>
+              <span class="pin-chip pin-empty">RX2+</span>
+              <span class="pin-chip pin-gnd">GND</span>
+            </div>
+            <div style="font-size: 0.75rem; color: #f87171; margin-top: 4px;">• 结果：全部 4 对高速差分线与 SBU 彻底断路！插在移动硬盘上只能跑 40MB/s，插显示器直接无信号。</div>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px;">
+            <div style="font-size: 0.78rem; font-weight:700; color: var(--accent-emerald); margin-bottom: 6px;">✔️ 全功能线 (USB4 / 雷电4 / 俗称 USB 5)：24 针引脚全焊通</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px;">内含 16~24 根微同轴线 (Micro-Coaxial) + 双层金属屏蔽网 + SBU 视频边带</div>
+            <div class="pin-row">
+              <span class="pin-chip pin-gnd">GND</span>
+              <span class="pin-chip pin-hs">TX1+</span>
+              <span class="pin-chip pin-hs">TX1-</span>
+              <span class="pin-chip pin-vbus">VBUS</span>
+              <span class="pin-chip pin-cc">CC</span>
+              <span class="pin-chip pin-dpdm">D+</span>
+              <span class="pin-chip pin-dpdm">D-</span>
+              <span class="pin-chip pin-sbu">SBU1</span>
+              <span class="pin-chip pin-vbus">VBUS</span>
+              <span class="pin-chip pin-hs">RX2-</span>
+              <span class="pin-chip pin-hs">RX2+</span>
+              <span class="pin-chip pin-gnd">GND</span>
+            </div>
+            <div style="font-size: 0.75rem; color: #34d399; margin-top: 4px;">• 结果：8 根差分线以 GHz 超高频传输数据与视频，SBU 进行 DisplayPort 握手，真正做到满血全通。</div>
+          </div>
+        </div>
+
+        <!-- Card 2: PAM3 Modulation & 120G Asymmetric Technology -->
+        <div class="card">
+          <h3 style="display:flex; align-items:center; gap:8px;">
+            <span>⚡ 为什么 USB4 2.0 (俗称 USB 5) 能达 120Gbps？PAM3 调制跃迁</span>
+          </h3>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+            在高频电子工程中，铜线存在不可逾越的物理损耗（集肤效应与介质损耗随频率呈指数级衰减）。USB4 2.0 / 雷电5 能够将速度从 40Gbps 翻倍至 80Gbps~120Gbps，核心依赖于两大物理层革命：
+          </p>
+
+          <div style="margin-bottom: 14px;">
+            <div style="font-weight:700; color:var(--accent-purple); font-size: 0.9rem; margin-bottom: 4px;">
+              1. 编码体制跨越：从 NRZ (二电平) 到 PAM3 (三电平)
+            </div>
+            <p style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.6;">
+              • <strong>传统 NRZ (USB 2~USB4)：</strong>每个时钟周期只能在高/低两个电平（0 或 1）切换，传输 <strong>1 bit</strong> 数据。若要提速，必须无脑翻倍物理时钟频率，导致电磁辐射暴增、线材损耗不可承受；<br>
+              • <strong>PAM3 (USB4 2.0 / USB 5)：</strong>在同一根线上引入 <strong>-1V、0V、+1V 三种电平幅度</strong>！每个电平状态能承载 $\log_2(3) \approx 1.58$ bit 数据。在维持甚至优化现有信道高频损耗的前提下，<strong>直接实现净吞吐量暴增 50% 以上</strong>！
+            </p>
+          </div>
+
+          <div>
+            <div style="font-weight:700; color:var(--accent-cyan); font-size: 0.9rem; margin-bottom: 4px;">
+              2. 动态非对称带宽重构 (Asymmetrical 120G Display Boost)
+            </div>
+            <p style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.6;">
+              Type-C 内部包含 4 条高速差分通道。传统上采用“2条发 + 2条收”的对称对等设计（双向各 40G = 80Gbps）。但在连接顶级高刷多显示器时，主机向显示器发送的视频数据极其庞大，而显示器回传的数据微乎其微：<br>
+              • <strong>动态翻转物理通道：</strong>协议芯片将原本负责接收的 1 条 RX 通道<strong>动态翻转为 TX 发送通道</strong>！<br>
+              • 形成 <strong>3 条发送通道 (3 × 40G = 120 Gbps)</strong> 与 <strong>1 条接收通道 (40 Gbps)</strong>，单向爆发带宽高达 120 Gbps，轻松驱动双 8K 60Hz HDR 或三路 4K 144Hz 极限屏幕。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- USB-IF Official Packaging & Certified Logo Guide (2022+ Standard) -->
+      <div class="tech-highlight-box">
+        <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+          <span>🏷️ 终结混乱命名：USB-IF 现行官方认证标识选购指南（如何避开“240W 龟速线”陷阱）</span>
+        </h4>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.65; margin-bottom: 16px;">
+          过去“USB 3.1 Gen 1”、“USB 3.2 Gen 2x2”等混乱命名让消费者苦不堪言。USB-IF 自 2022 年底起正式执行全新强制认证标识体系：<strong>全面废除“SuperSpeed”字样，包装与插头上必须同时印出明确的【传输速率】与【供电功率】</strong>：
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px;">
+            <div style="font-weight: 800; color: #9ca3af; font-size: 0.95rem; margin-bottom: 4px;">🏷️ [ USB 240W ] (无速率)</div>
+            <div style="font-size: 0.78rem; color: var(--accent-rose); font-weight: 700; margin-bottom: 4px;">⚠️ 实为 USB 2.0 纯充电线 (480Mbps)</div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">市售最常见编织线。适合床头给笔记本/手机快充，<strong>严禁用来拷贝大文件或连接显示器</strong>。</p>
+          </div>
+
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px;">
+            <div style="font-weight: 800; color: var(--accent-blue); font-size: 0.95rem; margin-bottom: 4px;">🏷️ [ USB 10Gbps · 240W ]</div>
+            <div style="font-size: 0.78rem; color: var(--accent-emerald); font-weight: 700; margin-bottom: 4px;">✔️ 性价比数据与快充全能线</div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">传输速度超 1GB/s，支持 4K60Hz 投屏与 240W 供电，是普通固态硬盘与日常办公的最佳搭配。</p>
+          </div>
+
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px;">
+            <div style="font-weight: 800; color: var(--accent-purple); font-size: 0.95rem; margin-bottom: 4px;">🏷️ [ USB 40Gbps · 240W ]</div>
+            <div style="font-size: 0.78rem; color: var(--accent-purple); font-weight: 700; margin-bottom: 4px;">⚡ 雷电4 / USB4 全功能标准线</div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">微同轴双芯片线。兼具 40Gbps 极速与 8K 视频，外接显卡坞与 Mac 顶级工作站首选。</p>
+          </div>
+
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px;">
+            <div style="font-weight: 800; color: #f472b6; font-size: 0.95rem; margin-bottom: 4px;">🏷️ [ USB 80Gbps · 240W ]</div>
+            <div style="font-size: 0.78rem; color: #f472b6; font-weight: 700; margin-bottom: 4px;">🚀 USB4 2.0 (俗称 USB 5) / 雷电5 旗舰</div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">PAM3 调制顶级旗舰线。支持 80G/120G 极速数据与多路 8K 高刷，全协议生态天花板。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Why Categorize This Way -->
+    <section id="why-categorized">
+      <h3 class="section-title">❓ 为什么这样分？底层工程逻辑与设计哲学</h3>
+      <p class="section-subtitle">USB-IF 制定这些标准并非凭空想象，每一处分类背后都对应着冷酷的电气物理学定律与产业经济学：</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>1. 为什么砍掉 100W 5A 线，只留 60W 和 240W？</h3>
+          <p><strong>彻底根除消费认知灾难与 50V 高压安全死角：</strong></p>
+          <ul>
+            <li><strong>消除同流不同压的混淆：</strong>若 100W (20V/5A) 和 240W (48V/5A) 并存，线身都标 5A，外观毫无差别。用户将 100W 线插在 140W 充头和 MacBook 上发现只能跑 100W，产生无尽客诉；</li>
+            <li><strong>高压绝缘与防击穿红线：</strong>旧 100W 线缆内部滤波电容耐压多为 25V~30V。若允许混用，一旦接入 48V 电源极易被瞬间击穿引发火灾；</li>
+            <li><strong>半导体成本抹平：</strong>50V 耐压 E-Marker 芯片与电容增量成本已不足数分钱，统一标准能大幅集约供应链。</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>2. 为什么 3A 可以免芯片，而 5A 必须强制芯片？</h3>
+          <p><strong>焦耳定律的平方级发热爆发 ($P = I^2R$)：</strong></p>
+          <ul>
+            <li>电流从 3A 增加到 5A，电流增大约 67%，但发热功率呈平方暴增：<strong>$5^2 / 3^2 = 25 / 9 \approx 2.78$ 倍</strong>！</li>
+            <li>在 3A (60W) 时，即便线身有些许接触阻抗，发热量依然处于自然风冷的安全临界内；</li>
+            <li>一旦通入 5A (100W~240W)，若无芯片确认线材线规与内阻，劣质细铜线会在几分钟内飙升至 90℃ 以上熔毁起火。<strong>5A 必须由芯片签发安全通行证</strong>。</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>3. 为什么供电功率与数据传输要彻底解耦？</h3>
+          <p><strong>用户体验与线缆机械特性的最佳妥协：</strong></p>
+          <ul>
+            <li>支持 40Gbps 雷电4 的线缆内部必须封装 8 组独立微同轴高频信号线，成本高达几十美元，且线身硬粗、长度很难超过 1 米；</li>
+            <li>90% 用户的需求仅仅是“一根长达 2 米、柔软亲肤、价格便宜、能在床头充笔记本”的纯充电线；</li>
+            <li>解耦让厂商得以生产大批高品质、柔软便宜的 <strong>240W + USB 2.0 快充线</strong>。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Core Terminology -->
+    <section id="cable-terminology">
+      <h3 class="section-title">🧠 核心术语深度解析：微控制器与报文底层</h3>
+      <p class="section-subtitle">充电线是如何参与握手并把控功率上限的？拆解插头内部的通信秘密：</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>1. E-Marker 芯片与 VCONN 供电</h3>
+          <p>Electronic Marker 是封装在插头内部指甲盖大小微型 PCB 上的超低功耗安全微控制器 (MCU)：</p>
+          <ul>
+            <li>平时无电休眠。插头内部的一端 CC 引脚接有 <strong>Ra (1kΩ 下拉电阻)</strong>；</li>
+            <li>充电头检测到 Ra 阻抗后，向该针脚输出 <strong>5V VCONN 稳压供电</strong>，瞬间唤醒 E-Marker 芯片开始握手。</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>2. SOP' 与 SOP'' 专属寻址通道</h3>
+          <p>USB-PD 建立了严格的包寻址隔离机制，防止线缆与手机通信打架：</p>
+          <ul>
+            <li><strong>SOP (Start of Packet)：</strong>充头与受电设备（手机/电脑）的会话通道；</li>
+            <li><strong>SOP' (Prime)：</strong>充头与线缆近端 E-Marker 芯片的专属通信通道；</li>
+            <li><strong>SOP'' (Double Prime)：</strong>与线缆远端芯片的通信通道（用于主动式高速线）。</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>3. Discover Identity 核心安全字段</h3>
+          <p>充头向线缆下发发现报文，E-Marker 返回包含自身物理极限的安全清单：</p>
+          <ul>
+            <li><strong>Vendor ID (VID) / Product ID (PID)：</strong>厂商与芯片合法注册码；</li>
+            <li><strong>Maximum VBUS Voltage：</strong>最高承受电压（EPR 规定必须标定 50V）；</li>
+            <li><strong>EPR Mode Capable (Bit 24)：</strong>高压准入标志位，为 1 方可放开 28V~48V；</li>
+            <li><strong>Snubber 物理消弧：</strong>带载热拔出时配合短针 CC 微秒级切断 PWM 消除拉弧火花。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 5: Interactive Cable Inspector -->
+    <section id="cable-inspector">
+      <h3 class="section-title">🧪 互动探针：E-Marker 芯片报文逆向解析 (Discover Identity)</h3>
+      <p class="section-subtitle">点击切换不同规格的线缆，观察其内部 E-Marker 芯片向充电头回传的 SOP' 数据帧与最终功率裁决：</p>
+
+      <div class="sim-box">
+        <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 12px;">
+          选择待测 Type-C 线缆类型：
+        </div>
+        <div class="preset-group">
+          <button class="preset-btn" onclick="inspectCable('none')">⚪ 普通 60W 基础线 (3A / 无芯片)</button>
+          <button class="preset-btn" onclick="inspectCable('spr100')">📦 100W 遗留旧线 (旧5A/20V · 已废止)</button>
+          <button class="preset-btn active" onclick="inspectCable('epr240')">🚀 现代 240W EPR 充电线 (5A/50V · USB 2.0)</button>
+          <button class="preset-btn" onclick="inspectCable('tb4')">⚡ 雷电4 / USB4 全功能线 (40G + 240W)</button>
+          <button class="preset-btn" onclick="inspectCable('tb5')">👑 雷电5 / USB4 2.0 (USB 5 满血 80G/120G + 240W)</button>
+          <button class="preset-btn" onclick="inspectCable('magic')">🇨🇳 国产 120W 魔改闪充线 (6A~10A/UFCS)</button>
+          <button class="preset-btn" onclick="inspectCable('fake')">⚠️ 虚标山寨线 (假 20V 芯片冒充 240W)</button>
+        </div>
+
+        <div class="inspector-grid">
+          <!-- Packet View -->
+          <div class="packet-view">
+            <div style="color: var(--text-muted); font-size: 0.75rem; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+              // SOP' Discover Identity VDO 解析帧 (Bitfields)
+            </div>
+            <div class="packet-row"><span class="packet-key">Vendor ID (VID):</span><span class="packet-val" id="pVid">0x05AC (Apple)</span></div>
+            <div class="packet-row"><span class="packet-key">Product ID (PID):</span><span class="packet-val" id="pPid">0x0304</span></div>
+            <div class="packet-row"><span class="packet-key">Max Current:</span><span class="packet-val" id="pCurrent">5.0 A</span></div>
+            <div class="packet-row"><span class="packet-key">Max VBUS Voltage:</span><span class="packet-val" id="pVoltage">50.0 V (EPR Certified)</span></div>
+            <div class="packet-row"><span class="packet-key">EPR Mode Capable (Bit 24):</span><span class="packet-val" id="pEpr">1 (True)</span></div>
+            <div class="packet-row"><span class="packet-key">USB Signaling (Data Rate):</span><span class="packet-val" id="pSpeed">USB 2.0 (480 Mbps)</span></div>
+            <div class="packet-row"><span class="packet-key">Standard Specification:</span><span class="packet-val" id="pHw">Rev 3.1 / 3.2</span></div>
+          </div>
+
+          <!-- Evaluation Result -->
+          <div class="eval-box">
+            <div>
+              <div id="evalBadge" class="eval-status eval-ok">✔️ 允许触发 240W EPR 全功率</div>
+              <h4 id="evalTitle" style="font-size: 1.1rem; margin-bottom: 8px;">240W EPR 官方认证线缆</h4>
+              <p id="evalDesc" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
+                线缆内置经过 USB-IF 认证的 50V 耐压 E-Marker 芯片，物理层具备抗电弧设计。连接 140W/240W 充电头可全速握手 28V/36V/48V 高压。
+              </p>
+            </div>
+            <div style="border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 14px; font-size: 0.85rem; color: var(--text-muted);" id="evalLimitation">
+              在 140W 充电器上的实际供电上限：<strong>140.0 W (28V @ 5A)</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>USB-PD 快充架构指南 · 传输介质 (Cable) 篇</p>
+      <p style="margin-top: 6px; font-size: 0.8rem;">
+        关联页面：<a href="usb_pd_guide.html" style="color:var(--accent-purple);">总览指南</a> ·
+        <a href="charger.html" style="color:var(--accent-purple);">充电器 (Source)</a> ·
+        <a href="device.html" style="color:var(--accent-purple);">被充电设备 (Sink)</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="js/common.js"></script>
+  <script>
+    // Theme Switcher
+    const themeBtn = document.getElementById('themeToggle');
+    const htmlEl = document.documentElement;
+    const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    setTheme(savedTheme);
+    themeBtn.addEventListener('click', () => {
+      const current = htmlEl.getAttribute('data-theme') || 'dark';
+      setTheme(current === 'dark' ? 'light' : 'dark');
+    });
+    function setTheme(theme) {
+      if (theme === 'light') {
+        htmlEl.setAttribute('data-theme', 'light');
+        themeBtn.textContent = '☀️';
+        localStorage.setItem('theme', 'light');
+      } else {
+        htmlEl.removeAttribute('data-theme');
+        themeBtn.textContent = '🌙';
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+
+    // Cross-page navigation dropdown toggle (for touch/click & accessibility)
+    const crossDropdown = document.getElementById('crossNavDropdown');
+    if (crossDropdown) {
+      const crossTrigger = crossDropdown.querySelector('.cross-nav-trigger');
+      crossTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        crossDropdown.classList.toggle('open');
+        crossTrigger.setAttribute('aria-expanded', crossDropdown.classList.contains('open'));
+      });
+      document.addEventListener('click', (e) => {
+        if (!crossDropdown.contains(e.target)) {
+          crossDropdown.classList.remove('open');
+          crossTrigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          crossDropdown.classList.remove('open');
+          crossTrigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
+    // Cable Inspection Data
+    const cableData = {
+      none: {
+        vid: "0x0000 (无芯片响应)",
+        pid: "N/A (SOP' 超时)",
+        curr: "3.0 A (默认基准)",
+        volt: "20.0 V (默认普通)",
+        epr: "0 (无芯片/不支持)",
+        speed: "USB 2.0 (480 Mbps)",
+        hw: "N/A",
+        statusClass: "eval-limit",
+        statusText: "⚠️ 仅限 60W (20V @ 3A) SPR 模式",
+        title: "普通 60W 基础线缆（3A / 无芯片）",
+        desc: "线缆内部没有 E-Marker 芯片，无法响应 SOP' 报文。依据规范，充电头将坚决将电流锁死在 3A 上限，即使插在 140W 或 240W 充电头上，最多也只能输出 20V/3A (60W)！",
+        limit: "在 140W 充头上的实际供电上限：<strong>60.0 W (20V @ 3A)</strong>"
+      },
+      spr100: {
+        vid: "0x05AC (旧认证芯片)",
+        pid: "0x0102 (PD 3.0 旧规范)",
+        curr: "5.0 A (历史存量)",
+        volt: "20.0 V (旧SPR限制)",
+        epr: "0 (False · 无法进EPR)",
+        speed: "USB 2.0 (480 Mbps)",
+        hw: "Rev 3.0 (官方已废止)",
+        statusClass: "eval-limit",
+        statusText: "🔒 仅限 100W 存量模式 (USB-IF 已废止该类别认证)",
+        title: "100W 遗留旧线（旧标准 5A / 20V · 已停发新认证）",
+        desc: "【关键澄清】USB-IF 在发布 Type-C 2.1 规范后，已正式废止 100W (20V/5A) 线缆规范与认证！所有新申请认证的 5A 线必须支持 240W EPR。该类线缆仅为 PD 3.0 时代的存量老线，芯片耐压仅 20V 且 EPR 位为 0。合规充头读取后出于安全保护，坚决拒绝升压至 28V/36V/48V，供电被严格锁死在 100W SPR 封顶。",
+        limit: "在 140W 充头上的实际供电上限：<strong>100.0 W (20V @ 5A 历史存量)</strong>"
+      },
+      epr240: {
+        vid: "0x2E66 (USB-IF 官方认证)",
+        pid: "0x240A",
+        curr: "5.0 A",
+        volt: "50.0 V (EPR Certified)",
+        epr: "1 (True · 开启高压)",
+        speed: "USB 2.0 (480 Mbps) [纯充线主流配置]",
+        hw: "Rev 3.1 / 3.2",
+        statusClass: "eval-ok",
+        statusText: "✔️ 现代唯一合规 5A 标准：允许触发 240W EPR",
+        title: "240W EPR 官方现行标准线缆 (5A / 50V · USB 2.0 数据)",
+        desc: "USB-IF 现行官方标准下唯一的 5A 认证级别！强制配备 50V 耐压 E-Marker 芯片与微秒抗拉弧放电吸收网络。向下兼容 65W/100W，向上独占 140W/240W 高压。特别说明：市售绝大部分 240W 快充编织线内部已物理精简 16 根高速引脚，仅保留 USB 2.0 (480Mbps) 基础传输以保证轻巧柔软度。",
+        limit: "在 140W 充头上的实际供电上限：<strong>140.0 W (28V @ 5A)</strong>"
+      },
+      tb4: {
+        vid: "0x8087 (Intel)",
+        pid: "0x0804",
+        curr: "5.0 A",
+        volt: "50.0 V (EPR Certified)",
+        epr: "1 (True)",
+        speed: "USB4 Gen3 (40 Gbps) + PCIe 3.0",
+        hw: "Rev 3.1",
+        statusClass: "eval-ok",
+        statusText: "⚡ 顶级全能线：40Gbps 数据 + 240W 供电",
+        title: "雷电4 / USB4 全功能满血线缆",
+        desc: "顶级微同轴高频线缆，双端双 E-Marker 芯片架构，完美支持 40Gbps 超高速数据传输与 240W EPR 供电，支持 DP 1.4a 视频传输与 PCIe 3.0 (32Gbps) 隧道隧道拓展。",
+        limit: "在 140W 充头上的实际供电上限：<strong>140.0 W (28V @ 5A)</strong>"
+      },
+      tb5: {
+        vid: "0x8087 (Intel / PAM3 Certified)",
+        pid: "0x0805 (USB4 Gen4 / TB5)",
+        curr: "5.0 A",
+        volt: "50.0 V (EPR Certified)",
+        epr: "1 (True · 开启高压)",
+        speed: "USB4 Gen4 PAM3 (80 Gbps / 120 Gbps) + PCIe 4.0",
+        hw: "USB4 v2.0 / Type-C 2.2",
+        statusClass: "eval-ok",
+        statusText: "👑 巅峰次世代线：80G/120G PAM3 极速 + 240W 满血供电",
+        title: "雷电5 / USB4 2.0 (俗称 USB 5) 顶级满血线缆",
+        desc: "采用 PAM3 三电平脉冲调制物理层与双层微同轴高频结构。支持 80Gbps 对称全双工或 120Gbps 动态非对称视频爆发加速，同时隧道化封装传输 PCIe 4.0 (64Gbps) 与 DisplayPort 2.1。内置 50V 耐压 EPR E-Marker，兼备 240W 满血供电，是目前个人计算机外设物理传输的终极形态。",
+        limit: "在 140W/240W 充头上的实际供电上限：<strong>240.0 W (48V @ 5A EPR)</strong>"
+      },
+      magic: {
+        vid: "0x2717 (小米/OPPO/vivo私有)",
+        pid: "0x006A (6A/10A 私有识别)",
+        curr: "6.0A ~ 10.0 A (超规格直充)",
+        volt: "20.0 V (低压大电流体系)",
+        epr: "0 (非 USB-IF 标准)",
+        speed: "USB 2.0 (特化快充)",
+        hw: "Custom SoC",
+        statusClass: "eval-ok",
+        statusText: "🇨🇳 国产私有闪充 / UFCS 专用低阻线",
+        title: "国产 6A / 10A 魔改闪充线 & UFCS 认证线",
+        desc: "中国厂商打破 5A 限制的产物。采用 18AWG 超粗铜芯与专属芯片鉴权（或 USB-A 口第 5 针弹片引出 CC）。与同品牌充头握手可跑满 120W~240W 极速直充；若插在第三方标准 PD 充头上，受电端芯片自动将其降级为普通 3A 线 (≤60W) 以保安全。",
+        limit: "在标准 PD 充头上的实际供电上限：<strong>安全锁死 ≤ 60W (3A)</strong>"
+      },
+      fake: {
+        vid: "0xFFFF (未注册山寨码)",
+        pid: "0x0001",
+        curr: "5.0 A (虚假宣称)",
+        volt: "20.0 V (实际无50V耐压)",
+        epr: "0 (破解报错)",
+        speed: "USB 2.0 劣质细线",
+        hw: "Unknown",
+        statusClass: "eval-danger",
+        statusText: "🚫 握手异常 / 触发降级保护",
+        title: "虚标/劣质山寨快充线",
+        desc: "虽然外包装印有 240W，但内部只塞了廉价的 20V 芯片甚至无芯片。合规充电头校验失败后拒绝输出高压，强制降级至 60W 或 5V 保护设备，防止细线过载熔毁起火。",
+        limit: "在 140W 充头上的实际供电上限：<strong>安全锁死 ≤ 60W</strong>"
+      }
+    };
+
+    function inspectCable(type, ev) {
+      document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+      const evt = ev || window.event;
+      if (evt && evt.target && evt.target.classList && evt.target.classList.contains('preset-btn')) {
+        evt.target.classList.add('active');
+      } else {
+        const btn = document.querySelector(`.preset-btn[onclick*="'${type}'"]`);
+        if (btn) btn.classList.add('active');
+      }
+
+      const data = cableData[type];
+      document.getElementById('pVid').textContent = data.vid;
+      document.getElementById('pPid').textContent = data.pid;
+      document.getElementById('pCurrent').textContent = data.curr;
+      document.getElementById('pVoltage').textContent = data.volt;
+      document.getElementById('pEpr').textContent = data.epr;
+      document.getElementById('pSpeed').textContent = data.speed;
+      document.getElementById('pHw').textContent = data.hw;
+
+      const evalBadge = document.getElementById('evalBadge');
+      evalBadge.className = `eval-status ${data.statusClass}`;
+      evalBadge.textContent = data.statusText;
+
+      document.getElementById('evalTitle').textContent = data.title;
+      document.getElementById('evalDesc').textContent = data.desc;
+      document.getElementById('evalLimitation').innerHTML = data.limit;
+    }
+
+    // Default to epr240
+    window.addEventListener('DOMContentLoaded', () => {
+      inspectCable('epr240');
+    });
+  </script>
+</body>
+</html>

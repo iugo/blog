@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>被充电设备 (Sink 受电端) 规范与功率决策机制 | USB-PD 快充生态</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/device.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container nav-bar">
+      <a href="usb_pd_guide.html" class="logo-group">
+        <div class="logo-badge">📱</div>
+        <div class="logo-text">
+          <h1>USB-PD 快充生态架构</h1>
+          <span>Source · Cable · Sink</span>
+        </div>
+      </a>
+      <div class="nav-actions">
+        <!-- 跨页生态切换下拉框 -->
+        <div class="cross-nav-dropdown" id="crossNavDropdown">
+          <button class="cross-nav-trigger" type="button" aria-expanded="false" aria-haspopup="true">
+            <span class="cross-nav-curr">📱 被充设备</span>
+            <span class="cross-nav-arrow">▾</span>
+          </button>
+          <div class="cross-nav-menu">
+            <div class="cross-nav-header">切换生态页面</div>
+            <a href="usb_pd_guide.html" class="cross-nav-item">
+              <span class="cross-nav-icon">⚡</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">总览指南 (Guide)</span>
+                <span class="cross-nav-desc">PD 3.x · 演进脉络与协议大全</span>
+              </div>
+            </a>
+            <a href="charger.html" class="cross-nav-item">
+              <span class="cross-nav-icon">🔌</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">供电端 (Source)</span>
+                <span class="cross-nav-desc">PDO 广播 · 握手状态机 · 消弧保护</span>
+              </div>
+            </a>
+            <a href="cable.html" class="cross-nav-item">
+              <span class="cross-nav-icon">🧵</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">充电线 (Cable)</span>
+                <span class="cross-nav-desc">E-Marker 芯片 · 240W 安全保护机制</span>
+              </div>
+            </a>
+            <a href="device.html" class="cross-nav-item active">
+              <span class="cross-nav-icon">📱</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">被充电设备 (Sink)</span>
+                <span class="cross-nav-desc">Request 决策 · 电荷泵直充与回退</span>
+              </div>
+              <span class="cross-nav-status">✓</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- 视觉分割线 -->
+        <div class="nav-divider" aria-hidden="true"></div>
+
+        <!-- 本页章节锚点直达 -->
+        <ul class="inpage-nav">
+          <li><a href="#sink-steps">协商步骤</a></li>
+          <li><a href="#device-categories">设备图谱</a></li>
+          <li><a href="#device-simulator">握手模拟</a></li>
+          <li><a href="#internal-buck">降压机制</a></li>
+          <li><a href="#fallback-tiers">协议回退</a></li>
+        </ul>
+
+        <button id="themeToggle" class="theme-toggle-btn" title="切换暗色/亮色模式">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">📱 受电端决策与转换机制</div>
+      <h2>
+        被充电设备（Sink 受电端）<br>
+        <span class="gradient-text">功率谈判的掌控者与内部降压架构</span>
+      </h2>
+      <p>
+        很多人误以为快充是充电头“灌”进去的，其实恰恰相反：
+        <strong>在 USB-PD 规范中，受电设备（手机、电脑）拥有绝对的话语权</strong>。
+        它根据电池电量、机身发热与运行负荷，动态裁决何时请求高压、何时降功率保护。
+      </p>
+    </section>
+
+    <!-- Trio Navigation Links -->
+    <div class="trio-nav">
+      <a href="charger.html" class="trio-card">
+        <div class="trio-icon">🔌</div>
+        <div class="trio-info">
+          <h4>充电器 (Source)</h4>
+          <p>供电端 · 广播供电能力与微秒消弧</p>
+        </div>
+      </a>
+      <a href="cable.html" class="trio-card">
+        <div class="trio-icon">🧵</div>
+        <div class="trio-info">
+          <h4>充电线 (Cable)</h4>
+          <p>传输介质 · E-Marker 芯片与 50V 耐压保护</p>
+        </div>
+      </a>
+      <a href="device.html" class="trio-card current">
+        <div class="trio-icon">📱</div>
+        <div class="trio-info">
+          <h4>被充电设备 (Sink)</h4>
+          <p>当前页面 · 功率决策与电荷泵直充</p>
+        </div>
+      </a>
+    </div>
+
+    <!-- Terminology Metaphor Callout -->
+    <div class="metaphor-callout">
+      <div style="display: flex; align-items: flex-start; gap: 14px;">
+        <span style="font-size: 2rem; line-height: 1;">💡</span>
+        <div>
+          <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">
+            术语趣解：为什么供电端叫 Source，受电端叫 Sink（水槽）？
+          </h4>
+          <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7;">
+            在日常英语中，<strong>Sink</strong> 最常见的含义是<strong>“厨房水槽、洗脸池”</strong>，作为动词是<strong>“下沉”</strong>。很多人第一次接触 USB-PD 协议时会大为不解：手机和电脑怎么成了“水槽”？这其实源于电气工程中最经典的<strong>“水流模型（Fluid Metaphor）”</strong>：
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 14px;">
+            <div class="callout-subcard">
+              <strong style="color: var(--accent-blue); font-size: 0.92rem;">🚰 电路中的经典“水流模型”</strong>
+              <p style="font-size: 0.83rem; color: var(--text-secondary); margin-top: 5px; line-height: 1.55;">
+                电气工程学把电流比作水流：<strong>Source（泉眼 / 水龙头）</strong> 是水流涌出的源头，在电路中称为<strong>“源（电源/供电端）”</strong>；
+                而 <strong>Sink（水槽 / 汇水池）</strong> 是承接、吸收和蓄存水流的容器，在电路学中专门称作<strong>“汇（受电端/负载）”</strong>。
+              </p>
+            </div>
+            <div class="callout-subcard">
+              <strong style="color: var(--accent-emerald); font-size: 0.92rem;">❄️ 类似概念：CPU 的 Heat Sink</strong>
+              <p style="font-size: 0.83rem; color: var(--text-secondary); margin-top: 5px; line-height: 1.55;">
+                电脑 CPU 上的散热片在英文中叫 <strong>Heat Sink（散热器 / 热汇）</strong>，含义是“把热量全部吸收吞没进去”。
+                手机里的锂电池就是一个吸收电能的“电量蓄水池”，因此被称为 <strong>Power Sink</strong>。
+              </p>
+            </div>
+            <div class="callout-subcard">
+              <strong style="color: var(--accent-purple); font-size: 0.92rem;">🔄 双角色设备：DRP (Dual-Role)</strong>
+              <p style="font-size: 0.83rem; color: var(--text-secondary); margin-top: 5px; line-height: 1.55;">
+                充电宝和笔记本就像带水泵的“蓄水库”：插插座给自己充电时是 <strong>Sink（接水受电）</strong>；
+                拔下来给手机供电时又瞬间切换成 <strong>Source（放水供电）</strong>。这在 PD 规范中叫 <strong>DRP（双角色电源）</strong>。
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core Mechanism Section -->
+    <section id="sink-steps">
+      <h3 class="section-title">🕹️ 设备端遵循 PD 协议的核心步骤</h3>
+      <p class="section-subtitle">从检测到插入、评估充电头广播到发出 Request 请求的完整流程：</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>1. Rd 下拉阻抗宣告身份</h3>
+          <p>未连接时设备处于受电就绪状态：</p>
+          <ul>
+            <li>CC 引脚内置有 <strong>5.1kΩ 的 Rd 下拉电阻</strong>；</li>
+            <li>插入线缆后，充头感知到电压被分压拉低，确认有受电设备接入，正式启动 <strong>5V VBUS 供电</strong>。</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>2. 解析 Source Cap 报文</h3>
+          <p>设备内部的 PD 控制芯片（TCPM）倾听来自充头的能力广播：</p>
+          <ul>
+            <li>比对充电头的所有 Fixed、PPS 与 AVS 档位；</li>
+            <li>根据设备当前电池健康、剩余电量与温度，寻找“能量与发热比最高”的最佳档位。</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>3. 发送 Request 并维持心跳</h3>
+          <p>设备主动指定索要的电压与最大电流：</p>
+          <ul>
+            <li>回复 <code>Request</code> 报文（指定所选的 PDO 序号）；</li>
+            <li>充头回传 <code>Accept</code> 与 <code>PS_RDY</code> 后，VBUS 才会安全升压；</li>
+            <li>在 EPR 模式下，设备必须每隔数百毫秒发送 <code>EPR Keep-Alive</code> 保活心跳。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Categorized Device Showcase Section -->
+    <section id="device-categories">
+      <h3 class="section-title">📱 常见被充电设备协议与充电特征分类库</h3>
+      <p class="section-subtitle">
+        不同设备的电池拓扑、功耗需求与充电策略天差地别。点击分类标签，深入了解各领域主流设备的握手协议、电压档位与避坑要点：
+      </p>
+
+      <!-- Device Table Toolbar (Filter Tabs + Instant Search) -->
+      <div class="device-table-toolbar">
+        <div class="filter-tabs">
+          <button class="filter-btn active" data-target="all" onclick="filterDevices('all')">🌟 全部设备 (All)</button>
+          <button class="filter-btn" data-target="phone" onclick="filterDevices('phone')">📱 智能手机 (Smartphones)</button>
+          <button class="filter-btn" data-target="audio" onclick="filterDevices('audio')">🎧 耳机 / 穿戴 (Audio & Wearables)</button>
+          <button class="filter-btn" data-target="pad" onclick="filterDevices('pad')">📟 平板 / 电纸书 (Tablets)</button>
+          <button class="filter-btn" data-target="pc" onclick="filterDevices('pc')">💻 笔记本 / 工作站 (Laptops)</button>
+          <button class="filter-btn" data-target="game" onclick="filterDevices('game')">🎮 掌机 / 显示器 (Consoles & DRP)</button>
+        </div>
+
+        <div class="device-search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="deviceSearch" class="device-search-input" placeholder="输入型号/协议/功率快速筛选（如: iPhone、PPS、140W、Switch）..." oninput="searchDevices()">
+        </div>
+      </div>
+
+      <!-- High-Density Categorized Device Table -->
+      <div class="table-wrapper">
+        <table class="device-table" id="deviceCatalogTable">
+          <thead>
+            <tr>
+              <th style="width: 18%;">设备代表型号 / 品类</th>
+              <th style="width: 15%;">主支持快充协议</th>
+              <th style="width: 14%;">典型工作档位 (V/A)</th>
+              <th style="width: 10%;">峰值/额定功率</th>
+              <th style="width: 18%;">线缆要求与降级兼容</th>
+              <th style="width: 25%;">核心机制与选购避坑指南</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Category Group: Smartphones -->
+            <tr class="table-group-header" data-cat="phone">
+              <td colspan="6">📱 智能手机专区 (Smartphones · 私有百瓦秒充、公开 PPS 直充与 UFCS 融合)</td>
+            </tr>
+
+            <!-- iPhone 18 Pro / 17 Pro (AVS Flagship) -->
+            <tr class="device-row" data-cat="phone">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">Apple iPhone 18 Pro / Max & 17 Pro</span>
+                  <span class="dev-name-sub">苹果快充革命 · 拥抱 AVS 规范</span>
+                  <span class="dev-badge badge-phone">智能手机</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-epr">USB-PD 3.1 / 3.2 AVS</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">可调电压供电 (AVS 动态调压)</div>
+              </td>
+              <td>
+                <span class="param-code">AVS 15V~20V @ 3.0A</span><br>
+                <span class="param-code" style="color: var(--text-muted);">微步进动态调压直驱</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-high">60W (AVS 冲刺)</span><br>
+                <span style="font-size: 0.78rem; color: var(--accent-emerald);">40W 持续稳态</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">普通 3A 线即可跑满 60W</strong>
+                <div style="font-size: 0.78rem; color: var(--accent-amber); margin-top: 3px;">
+                  ⚠️ 充头必须支持 AVS！无 AVS 充头回退 27W~30W
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  <strong>苹果快充划时代升级：</strong>iPhone 18 Pro 系列打破了延续多年的 27W 瓶颈，<strong>官方拥抱 USB-PD 3.1/3.2 AVS 规范</strong>，冲刺功率达 60W（约 15 分钟充至 50%）。<br>
+                  💡 <strong>选购避坑死穴：</strong>机身必须检测到充头广播的 <strong>AVS 动态档位</strong> 才能解锁 60W；若使用市面上老旧的普通 65W/100W PD 充电头（仅支持固定电压档），机身将自动降级为 <strong>27W 固定电压慢充</strong>！选购第三方充头时请务必确认规格表标注“支持 AVS”。
+                </div>
+              </td>
+            </tr>
+
+            <!-- iPhone 15 / 16 -->
+            <tr class="device-row" data-cat="phone">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">Apple iPhone 15 / 16 / 16 Pro 全系</span>
+                  <span class="dev-name-sub">苹果固定电压架构主力机</span>
+                  <span class="dev-badge badge-phone">智能手机</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-pd">USB-PD 3.0 (Fixed)</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">单电芯 + 机内传统 Buck 降压</div>
+              </td>
+              <td>
+                <span class="param-code">9.0V @ 3.0A</span><br>
+                <span class="param-code" style="color: var(--text-muted);">瞬时峰值 15V @ 2.5A</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-std">27W ~ 30W</span><br>
+                <span style="font-size: 0.78rem; color: var(--text-muted);">瞬时冲刺 ~38W</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">普通 3A 线缆即可</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  零私有协议；不支持大电流 PPS；5V/9V 标准回退
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  苹果机身温控策略严苛，仅在前 30% 低电量时冲刺 27W~30W 峰值，随后迅速降至 15W~20W 缓充；搭配任意标准 20W/30W PD 充电头即可获得 95% 以上充电体验，无需追求百瓦大头。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Samsung Galaxy S25 / S26 Ultra -->
+            <tr class="device-row" data-cat="phone">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">三星 Galaxy S25 / S26 Ultra</span>
+                  <span class="dev-name-sub">Android PPS 标杆旗舰</span>
+                  <span class="dev-badge badge-phone">智能手机</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-pps">USB-PD 3.0 PPS</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">SFC 2.0 (45W) / SFC 3.0 (60W)</div>
+              </td>
+              <td>
+                <span class="param-code">PPS 10V/4.5A 或 15V/3A</span><br>
+                <span class="param-code" style="color: var(--text-muted);">S26U 升级高压 60W PPS</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-mid">45W ~ 60W</span>
+              </td>
+              <td>
+                <strong style="color: var(--accent-amber);">推荐 5A E-Marker 线</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  S25U 新增 15V/3A 档位拓宽 3A 线兼容；老款 3A 线锁 25W
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  <strong>选头避坑：</strong>三星依靠 PPS 协议控制充电发热。S25U 强化了 15V/3A 档位，使 3A 线材也能跑满 45W；而 S26U 升级为 60W Super Fast Charging 3.0，必须充头具备 60W+ PPS 输出能力。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Xiaomi / Redmi -->
+            <tr class="device-row" data-cat="phone">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">小米 15 / 17 / Ultra / Redmi K系列</span>
+                  <span class="dev-name-sub">跳过16直升17对标iPhone · 开放100W PPS生态</span>
+                  <span class="dev-badge badge-phone">智能手机</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-flash">HyperCharge 秒充</span><br>
+                <span class="proto-pill proto-pps">全系兼容 100W PPS</span><br>
+                <span class="proto-pill proto-ufcs">UFCS 融合快充</span>
+              </td>
+              <td>
+                <span class="param-code">私有 20V @ 5A~6A</span><br>
+                <span class="param-code" style="color: var(--accent-emerald);">通用 PPS 20V @ 5.0A</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-high">90W ~ 120W</span><br>
+                <span style="font-size: 0.78rem; color: var(--accent-emerald);">通用 PPS: 65W~100W</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">小米17全面支持普通5A线</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  普通 5A E-Marker 线配合 100W PPS 头可满血 100W；支持 9V/3A PD
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  <strong>跳代对标与生态彻底开放：</strong>官方跳过“16”由小米 15 <strong>直升小米 17 全面代际对标 iPhone 17</strong>。小米 17 迎来重大开放：<strong>全系兼容 100W PPS 通用协议</strong>，使用第三方 100W PPS 充电头即可实现“满血”直充；小米 15/K系列则支持 90W~120W 原装秒充与 65W PPS。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Huawei / Honor -->
+            <tr class="device-row" data-cat="phone">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">华为 Mate 70 / Pura 70 / 荣耀 Magic</span>
+                  <span class="dev-name-sub">SuperCharge · 深度主导 UFCS</span>
+                  <span class="dev-badge badge-phone">智能手机</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-flash">SuperCharge Turbo / SCP</span><br>
+                <span class="proto-pill proto-ufcs">UFCS 融合快充</span>
+              </td>
+              <td>
+                <span class="param-code">私有 11V @ 6A~8.8A</span><br>
+                <span class="param-code" style="color: var(--text-muted);">UFCS 11V~21V</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-high">66W ~ 100W</span><br>
+                <span style="font-size: 0.78rem; color: var(--accent-amber);">UFCS: 40W~66W</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">原装定制大电流线</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  第三方普通 PD 头通常回退至 9V/2A (18W) 慢充
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  <strong>选头避坑：</strong>华为全系深度主导并认证 <strong>UFCS 融合快充</strong>（如 Mate 70 认证 40W UFCS）。如果外出不想带原装大头，强烈建议选购支持 UFCS 的第三方充电器，可跑出 40W~66W 跨品牌高功率快充！
+                </div>
+              </td>
+            </tr>
+
+            <!-- OPPO / OnePlus / realme -->
+            <tr class="device-row" data-cat="phone">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">OPPO Find X7/X8 / 一加 12/13 / realme</span>
+                  <span class="dev-name-sub">SuperVOOC 串联双电芯架构</span>
+                  <span class="dev-badge badge-phone">智能手机</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-flash">SuperVOOC 闪充</span><br>
+                <span class="proto-pill proto-ufcs">UFCS 融合快充</span>
+              </td>
+              <td>
+                <span class="param-code">私有 11V @ 7.3A~9.1A</span><br>
+                <span class="param-code" style="color: var(--text-muted);">串联 2S 电芯直充</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-high">80W ~ 100W ~ 240W</span><br>
+                <span style="font-size: 0.78rem; color: var(--accent-amber);">UFCS: 33W~44W</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">定制 7-pin 或特制 CC 触点线</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  第三方普通 PD 头安全限制在 18W~27W；新机支持 UFCS
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  全链路定制线材配合原装充头跑满 100W~240W 双电芯直充；普通 PD 头充能较慢（18W~27W）；近年新机型已普遍加入 UFCS 融合快充协议认证（可达 33W~44W 兼容快充）。
+                </div>
+              </td>
+            </tr>
+
+            <!-- vivo / iQOO -->
+            <tr class="device-row" data-cat="phone">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">vivo X100 / X200 / iQOO 12/13 旗舰</span>
+                  <span class="dev-name-sub">FlashCharge 超快闪充 · 10C极片</span>
+                  <span class="dev-badge badge-phone">智能手机</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-flash">FlashCharge 超快闪充</span><br>
+                <span class="proto-pill proto-ufcs">UFCS 44W</span>
+                <span class="proto-pill proto-pps">iQOO PPS 55W</span>
+              </td>
+              <td>
+                <span class="param-code">私有 20V @ 6A 或 11V @ 11A</span><br>
+                <span class="param-code" style="color: var(--text-muted);">UFCS 11V @ 4A</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-high">80W ~ 120W ~ 200W</span><br>
+                <span style="font-size: 0.78rem; color: var(--accent-emerald);">通用: 44W~55W</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">原装魔改大电流线</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  普通第三方 PD 头多回退为 18W/27W；部分 iQOO 开放 55W PPS
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  iQOO 性能旗舰以 20V/6A (120W) 统治游戏超快充；普通 PD 充头多回退为 18W/27W，但部分 iQOO 旗舰开放了 55W PPS 兼容；vivo/iQOO 全系均通过了 UFCS 44W 融合快充认证。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Google Pixel -->
+            <tr class="device-row" data-cat="phone">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">Google Pixel 8 / 9 Pro</span>
+                  <span class="dev-name-sub">原生纯正 USB-IF 标准典范</span>
+                  <span class="dev-badge badge-phone">智能手机</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-pps">USB-PD 3.0 PPS</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">零私有协议，严循标准</div>
+              </td>
+              <td>
+                <span class="param-code">PPS 11V @ 3.4A</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-std">30W ~ 37W</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">标准 3A Type-C 线</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  严禁使用任何专有私有协议，完全依赖公开标准
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  Google 官方严禁使用任何专有私有协议，完全按照 USB-IF 标准握手。只要第三方充头支持标准的 11V PPS 档位，均可跑满最高功率，通用性与协议纯正度极高。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Category Group: Audio & Wearables -->
+            <tr class="table-group-header" data-cat="audio">
+              <td colspan="6">🎧 耳机与可穿戴设备 (Audio & Wearables · 5V 基础供电、微电流防断电与 Rd 下拉电阻)</td>
+            </tr>
+
+            <!-- TWS -->
+            <tr class="device-row" data-cat="audio">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">TWS 耳机仓 (AirPods / 索尼 / 华为)</span>
+                  <span class="dev-name-sub">微型可穿戴音频设备</span>
+                  <span class="dev-badge badge-audio">耳机 / 穿戴</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-base">USB 2.0 5V 基准</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">末期微电流 (<50mA)</div>
+              </td>
+              <td>
+                <span class="param-code">5.0V @ 0.5A ~ 1.0A</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-low">2.5W ~ 5.0W</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">任意标准 Type-C 线</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  仅需 5V 基础供电，无需快充协议
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  <strong>双大陷阱：</strong>① 充至 80% 之后电流急剧缩小至几十毫安，部分多口智能充电头会误判“已拔线”而意外断电；② 劣质充电仓漏焊 5.1kΩ 下拉电阻（Rd Missing），导致双 C 线完全充不进电，只能用 A-to-C 线。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Smartwatch -->
+            <tr class="device-row" data-cat="audio">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">智能手表 / 手环 (Apple / 华为 / 佳明)</span>
+                  <span class="dev-name-sub">磁吸无线 / 触点穿戴设备</span>
+                  <span class="dev-badge badge-audio">耳机 / 穿戴</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-pd">USB 5V / PD 5V</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">磁吸充座接收 5V 转化</div>
+              </td>
+              <td>
+                <span class="param-code">5.0V @ 1.0A ~ 2.0A</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-low">5W ~ 10W 快充</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">专用磁吸线 (带 C 口芯片)</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  插在任意 Type-C 充头或充电宝均可平稳供电
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  现代智能手表（如 Apple Watch S7+ 磁吸快充线）采用 Type-C 插头，内部带有协议芯片向充头索要 5V/1A 或 5V/2A，发热量小且充电极为稳定，建议搭配支持微电流模式的充电宝。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Category Group: Tablets & E-Readers -->
+            <tr class="table-group-header" data-cat="pad">
+              <td colspan="6">📟 平板电脑与电纸书 (Tablets & E-Readers · 15V 黄金档位依赖与通用快充)</td>
+            </tr>
+
+            <!-- iPad Pro M4/M5 & iPad Air -->
+            <tr class="device-row" data-cat="pad">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">Apple iPad Pro (M4 & M5) / Air 系列</span>
+                  <span class="dev-name-sub">生产力大屏平板 · 高压快充</span>
+                  <span class="dev-badge badge-pad">平板电脑</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-pd">USB-PD 3.0 / 3.1 SPR</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">机身 Buck 降压给双电芯</div>
+              </td>
+              <td>
+                <span class="param-code">15.0V @ 3.0A 或 20.0V @ 3.0A</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-mid">38W (M4) ~ 60W (M5)</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">标准 3A Type-C 线</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  缺少 15V/20V 高压档位的充头降级为 9V/2A (18W) 慢充
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  <strong>死穴在高压档：</strong>M5 iPad Pro 升级支持约 30 分钟充至 50% 的 60W 快速补电能力；但 iPad 全系高度依赖 <strong>15V / 20V 高压档位</strong>。如果只用普通 20W 手机充头（仅 5V/9V），充 iPad 只有 18W 龟速补电；强烈推荐搭配 60W~65W 具备完整 15V/3A、20V/3A 的充头。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Android Tablets & Kindle -->
+            <tr class="device-row" data-cat="pad">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">安卓平板 (华为/小米) / Kindle 电纸书</span>
+                  <span class="dev-name-sub">影音娱乐大屏与墨水屏阅读器</span>
+                  <span class="dev-badge badge-pad">平板 / 电纸书</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-pd">USB-PD 3.0</span>
+                <span class="proto-pill proto-base">5V 基础</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">支持各厂商通用快充</div>
+              </td>
+              <td>
+                <span class="param-code">9V/3A、15V/2A、5V/1.5A</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-mid">7.5W ~ 67W</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">普通 3A Type-C 线</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  协议宽容度高，广泛兼容各类 PD 充头
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  Kindle 等墨水屏功耗低，仅需 5V/1.5A 即可维持长续航；而华为 MatePad / 小米平板大电池机型支持 40W~67W 快充，兼容 30W 以上通用 PD 协议，出差带一个 65W 头即可兼顾。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Category Group: Laptops & Workstations -->
+            <tr class="table-group-header" data-cat="pc">
+              <td colspan="6">💻 笔记本与高性能工作站 (Laptops & Workstations · 45W~65W 办公、100W SPR 极限与 140W~240W EPR)</td>
+            </tr>
+
+            <!-- MacBook Air -->
+            <tr class="device-row" data-cat="pc">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">MacBook Air / 办公轻薄本</span>
+                  <span class="dev-name-sub">ThinkPad X1 / Dell XPS 13</span>
+                  <span class="dev-badge badge-pc">轻薄笔记本</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-pd">USB-PD 3.0 SPR (Fixed)</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">单/双电池串联架构</div>
+              </td>
+              <td>
+                <span class="param-code">20.0V @ 2.25A ~ 3.25A</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-mid">45W ~ 65W SPR</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">普通 3A 线缆即可跑满</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  低于 45W 充头自适应降功率，应急休眠补电
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  办公轻薄本日常运行功耗仅 15W~25W，峰值 45W~65W。使用任何普通的 3A Type-C 线搭配 65W 充头即可满速运行，是整个数码生态中兼容性与稳定性最好的设备类型。
+                </div>
+              </td>
+            </tr>
+
+            <!-- MacBook Pro 14 -->
+            <tr class="device-row" data-cat="pc">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">MacBook Pro 14" / 高性能创作本</span>
+                  <span class="dev-name-sub">SPR 时代的 100W 性能天花板</span>
+                  <span class="dev-badge badge-pc">性能笔记本</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-pd">USB-PD 3.0 SPR (Fixed)</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">触及 5A 电流极限</div>
+              </td>
+              <td>
+                <span class="param-code">20.0V @ 4.8A ~ 5.0A</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-high">96W ~ 100W SPR</span>
+              </td>
+              <td>
+                <strong style="color: var(--accent-amber);">必须 5A E-Marker 线</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  若插普通 3A 线，被握手协议严格降级为 60W (20V/3A)
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  <strong>掉电陷阱：</strong>由于达到 5A 极限，如果插上了普通的 3A 线缆，电脑会被握手协议严格限制在 60W (20V/3A) 供电；在高负载满载渲染剪视频时可能会发生“边充边掉电”。
+                </div>
+              </td>
+            </tr>
+
+            <!-- MacBook Pro 16 -->
+            <tr class="device-row" data-cat="pc">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">MacBook Pro 16" (M3/M4/M5 Max)</span>
+                  <span class="dev-name-sub">全球首款 USB PD 3.1 EPR 商用本</span>
+                  <span class="dev-badge badge-pc">工作站笔记本</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-epr">USB-PD 3.1 EPR (Fixed)</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">28V 高压供电母线</div>
+              </td>
+              <td>
+                <span class="param-code">28.0V @ 5.0A</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-high">140W EPR</span>
+              </td>
+              <td>
+                <strong style="color: var(--accent-purple);">MagSafe 3 或 240W EPR 线</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  使用传统 100W 线自动降级回 100W SPR 模式
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  <strong>满血条件：</strong>必须同时满足：140W+ EPR 充头 + MagSafe 3 编织线（或认证的 240W EPR C-to-C 线）；充头与线缆任何一环不满足 EPR 50V 耐压认证，系统即刻自适应回退至 100W SPR。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Gaming Laptop -->
+            <tr class="device-row" data-cat="pc">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">旗舰独显游戏本 (拯救者 / ROG / 外星人)</span>
+                  <span class="dev-name-sub">PD 3.1 终极目标：取代砖头电源</span>
+                  <span class="dev-badge badge-pc">游戏本 / 工作站</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-epr">USB-PD 3.1 EPR (AVS)</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">高负载旁路供电 (Bypass)</div>
+              </td>
+              <td>
+                <span class="param-code">28V / 36V / 48V (最高 5A)</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-high">140W ~ 240W AVS</span>
+              </td>
+              <td>
+                <strong style="color: var(--accent-purple);">强制 240W EPR 专属线缆</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  插普通线仅能提供 65W/100W 应急慢充
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  符合最新 PD 3.1 EPR 标准的新款游戏本采用 28V~48V AVS 动态高压母线直驱，在高负荷 3A 游戏时可实现电源直通旁路供电（Bypass），避免电池高温大电流充放电老化，彻底告别砖头电源。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Category Group: Consoles, Displays & DRP -->
+            <tr class="table-group-header" data-cat="game">
+              <td colspan="6">🎮 游戏掌机、显示器与 DRP 外设 (Consoles & DRP · 15V 底座供电要求、旁路供电与一线连)</td>
+            </tr>
+
+            <!-- Switch -->
+            <tr class="device-row" data-cat="game">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">Nintendo Switch (初代 / OLED)</span>
+                  <span class="dev-name-sub">任天堂便携 / 底座两用掌机</span>
+                  <span class="dev-badge badge-game">游戏掌机</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-pd">USB-PD 2.0 (特化)</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">掌机与底座策略分裂</div>
+              </td>
+              <td>
+                <span class="param-code">掌机 15V@1.2A / 9V@2A</span><br>
+                <span class="param-code" style="color: var(--accent-rose);">底座 强制 15V @ 2.6A+</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-std">18W (掌机) / 39W (底座)</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">普通 3A 线缆即可</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  充头若缺少 15V 档位，TV 底座彻底拒不工作
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  <strong>经典大坑：</strong>Switch 掌机模式对电压宽容（9V/12V/15V 均可边玩边充）；但 <strong>TV 底座模式死锁 15V</strong>！很多只有 5V/9V/20V 缺少 15V 的充电头，插在底座上电视完全黑屏无信号。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Steam Deck / ROG Ally -->
+            <tr class="device-row" data-cat="game">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">Steam Deck / ROG Ally 掌机</span>
+                  <span class="dev-name-sub">x86 高性能 PC 掌机架构</span>
+                  <span class="dev-badge badge-game">游戏掌机</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-pd">USB-PD 3.0 SPR</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">标准公开规范实现</div>
+              </td>
+              <td>
+                <span class="param-code">15.0V @ 3.0A 或 20.0V @ 2.25A</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-mid">45W ~ 65W SPR</span>
+              </td>
+              <td>
+                <strong style="color: var(--text-primary);">普通 3A Type-C 线</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  低于 45W 充头降功率慢充，游戏时可能轻微耗电
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  Steam Deck 标配 45W (15V/3A) 充电器，ROG Ally 增强模式需 65W 充头。两者均基于标准 PD 协议，通用性极佳；APU 满载时支持边充边玩与电池直通旁路供电。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Type-C Display / Powerbank -->
+            <tr class="device-row" data-cat="game">
+              <td>
+                <div class="dev-name-wrap">
+                  <span class="dev-name-title">Type-C 大屏显示器 / 双向充电宝</span>
+                  <span class="dev-name-sub">双角色电源 (DRP) 设备</span>
+                  <span class="dev-badge badge-game">外设 / 显示器</span>
+                </div>
+              </td>
+              <td>
+                <span class="proto-pill proto-pd">USB-PD DRP (双向)</span>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">DP Alt Mode 音视频融合</div>
+              </td>
+              <td>
+                <span class="param-code">20.0V @ 3.25A ~ 5.0A</span>
+              </td>
+              <td>
+                <span class="power-cell power-val-high">65W ~ 100W (DRP)</span>
+              </td>
+              <td>
+                <strong style="color: var(--accent-purple);">全功能 Type-C 线 (需视频)</strong>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                  不能使用纯充电线（缺少高速差分对）
+                </div>
+              </td>
+              <td>
+                <div class="pitfall-note">
+                  显示器作为供电设备（Source）给笔记本充 90W，同时作为受电端接收笔记本传输的 4K 60Hz 视频信号并扩展键盘鼠标 HUB。连接时必须使用全功能 Type-C 数据线（非仅充电线）。
+                </div>
+              </td>
+            </tr>
+
+            <!-- Empty Row for Search Results -->
+            <tr id="deviceEmptyRow" style="display: none;">
+              <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                🔍 未找到匹配的设备或协议，请尝试更换关键词（如：iPhone、PPS、140W、Switch）
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Problem Alert Callout -->
+      <div class="trap-callout">
+        <h4 style="font-size: 1.15rem; font-weight: 800; color: var(--accent-amber); margin-bottom: 8px; display:flex; align-items:center; gap:8px;">
+          ⚠️ 避坑专题：为什么很多高性能百瓦充电头，充不了你的耳机手环或剃须刀？
+        </h4>
+        <p style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.7;">
+          在数码生活中，很多人会遇到<strong>“插百瓦氮化镓充电头，耳机仓毫无反应，但用老旧五福一安（5V/1A）却能充”</strong>的怪现象。这主要源于以下两大设计根源：
+        </p>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 14px;">
+          <div class="callout-subcard">
+            <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">1. 硬件缺陷：受电端漏焊 5.1kΩ 下拉电阻 (Rd Missing)</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
+              很多低成本 TWS 耳机、电子烟、充电手电筒只是把以前的 Micro-USB 接口机械换成了 Type-C 形状，但<strong>为了省钱省工，未在母座 CC 引脚上焊接 5.1kΩ 下拉电阻</strong>。
+              导致当使用 C-to-C 双头线接入合规 PD 充电头时，充电头 CC 脚检测不到阻抗，判定为“未插入任何设备”，<strong>坚持输出 0V 断电保护</strong>！只有换用 A-to-C 线（强制给 5V）才能充进去。
+            </div>
+          </div>
+          <div class="callout-subcard">
+            <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">2. 软件机制：小电流切断机制 (No-Load Cutoff)</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
+              智能多口充电器和移动电源为了节能与安全，内部设有“空载自动关断”阈值。智能手环或耳机在充电接近饱和时，电流会缩减至 <strong>10mA ~ 30mA</strong>。
+              充电头检测到电流过低，误以为设备已经拔掉，随即自动关闭供电端口。建议选择具备<strong>“小电流/微电流模式（双击按键开启）”</strong>的充电配件。
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Negotiation Simulator -->
+    <section id="device-simulator">
+      <h3 class="section-title">🧪 互动演练：设备端受电决策与木桶效应模拟</h3>
+      <p class="section-subtitle">选择不同分类的设备、充电器与线缆搭配，观察受电设备发出的 Request 报文与内部状态转换：</p>
+
+      <div class="sim-box">
+        <div class="sim-controls-grid">
+          <div class="select-group">
+            <label>1. 选择被充电设备 (Sink)：</label>
+            <select id="devSelect" onchange="runNegotiation()">
+              <optgroup label="📱 智能手机">
+                <option value="iphone18">📱 iPhone 18 Pro / 17 Pro (60W AVS 极速冲刺 / 需 AVS 充头)</option>
+                <option value="iphone">📱 iPhone 15 / 16 Pro (最高 27W~30W PD Fixed)</option>
+                <option value="samsung">⚡ 三星 S25/S26 Ultra (45W~60W PPS 直充)</option>
+                <option value="xiaomi">🇨🇳 小米 15/17 旗舰 (私有100W~120W / 开放100W PPS)</option>
+                <option value="huawei">🇨🇳 华为 Mate 70/Pura 70 (私有100W / UFCS 66W / PD 18W)</option>
+                <option value="oppo">🇨🇳 OPPO Find X8 / 一加13 (私有100W / UFCS 44W / PD 18W)</option>
+                <option value="vivo">🇨🇳 vivo X200 / iQOO 13 (私有120W / UFCS 44W / PPS 55W)</option>
+                <option value="pixel">🤖 Google Pixel 9 Pro (标准 37W PPS)</option>
+              </optgroup>
+              <optgroup label="🎧 耳机与可穿戴">
+                <option value="airpods">🎧 AirPods Pro / TWS耳机仓 (5V/1A 5W 小电流)</option>
+                <option value="watch">⌚ 智能手表 / 手环 (5V/1.5A 7.5W 快充)</option>
+              </optgroup>
+              <optgroup label="📟 平板电脑与阅读器">
+                <option value="ipad">📟 iPad Pro M4/M5 (40W~60W 高压快充)</option>
+                <option value="kindle">📖 Kindle 电纸书 (5V/1.5A 7.5W)</option>
+              </optgroup>
+              <optgroup label="💻 笔记本电脑与工作站">
+                <option value="air">💻 MacBook Air M2~M4 (20V/3.25A 65W)</option>
+                <option value="mbp14">💻 MacBook Pro 14" (20V/5A 100W SPR)</option>
+                <option value="macbook" selected>🍏 MacBook Pro 16" M3~M5 Max (EPR 28V/5A 140W)</option>
+                <option value="gaming">🎮 拯救者 / 旗舰游戏本 (EPR 48V/5A 240W AVS)</option>
+              </optgroup>
+              <optgroup label="🎮 掌机与其他周边">
+                <option value="switch_dock">🎮 Switch TV底座模式 (强制锁定 15V/2.6A 39W)</option>
+                <option value="switch_hand">🎮 Switch 掌机模式 (15V/1.2A 18W)</option>
+                <option value="steamdeck">🎮 Steam Deck 掌机 (15V/3A 45W)</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="select-group">
+            <label>2. 搭配的充电器 (Source)：</label>
+            <select id="chargerSelect" onchange="runNegotiation()">
+              <option value="20">20W 手机充电头 (5V/9V)</option>
+              <option value="65">65W 笔记本充头 (支持 PPS)</option>
+              <option value="140" selected>140W 氮化镓充头 (EPR 28V)</option>
+              <option value="240">240W 极客游戏充头 (EPR 48V)</option>
+            </select>
+          </div>
+
+          <div class="select-group">
+            <label>3. 使用的充电线缆 (Cable)：</label>
+            <select id="cableSelect" onchange="runNegotiation()">
+              <option value="3a">普通 3A 线 (无芯片，限 60W)</option>
+              <option value="100w">100W 5A E-Marker 线 (限 100W SPR)</option>
+              <option value="240w" selected>240W EPR 专属线 (50V/5A 认证)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="negotiation-panel">
+          <div class="handshake-step">
+            <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">🤝 协议握手日志帧：</div>
+            <div id="step1">[1] CC 检测：检测到 Rd 下拉，5V 供电建立</div>
+            <div id="step2">[2] SOP' 读线：读取线缆 E-Marker 属性...</div>
+            <div id="step3">[3] SOP 接收：充头广播可供档位列表...</div>
+            <div id="step4" style="color: var(--accent-blue);">[4] Sink 决策：根据设备策略发出 Request 报文...</div>
+            <div id="step5" style="color: var(--accent-emerald);">[5] 充头响应：Accept & PS_RDY，升压供电成功！</div>
+          </div>
+
+          <div class="result-summary">
+            <div>
+              <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">协商最终充电功率：</span>
+              <div class="res-power" id="resPower">140.0 W</div>
+              <div style="font-size: 0.95rem; font-weight: 700; color: var(--accent-blue); margin-top: 4px;" id="resMode">
+                EPR Fixed 28.0V @ 5.0A
+              </div>
+            </div>
+
+            <div style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-top: 14px;" id="resNote">
+              受电设备已进入全速充电状态。
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Inside Device Power Conversion -->
+    <section id="internal-buck">
+      <h3 class="section-title">⚡ 设备机身内部：电是如何被吃进去的？</h3>
+      <div class="grid-3">
+        <div class="card">
+          <h3>🔋 传统多级 Buck 降压 (笔记本)</h3>
+          <p>笔记本内部拥有 3S/4S 多节串联电池与高功耗硬件：</p>
+          <ul>
+            <li>外部输入 20V 或 28V 高压；</li>
+            <li>主板多相 Buck 芯片将高压降为 12V 充入电池，或直接降为 1.0V 供给 CPU/GPU 核心；</li>
+            <li>转换效率约 92%~95%，发热散入笔记本风道。</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>⚡ 电荷泵 (Charge Pump) 直充 (手机)</h3>
+          <p>现代手机百瓦快充的核心黑科技：</p>
+          <ul>
+            <li>利用容性电荷泵做 2:1 或 4:1 减半降压（例如输入 10V PPS，直转 5V 并将电流翻倍为 8A）；</li>
+            <li>转换效率高达 <strong>97% ~ 98%</strong>，绕过机身内发热巨大的电感降压元件，实现极速冷充。</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>🎮 旁路供电 (Bypass Charging)</h3>
+          <p>游戏手机与高性能电竞笔记本的专属策略：</p>
+          <ul>
+            <li>插电高负载打游戏时，受电芯片直接将外部电力引流给主板和处理器，<strong>完全不给电池充电</strong>；</li>
+            <li>避免了“边玩边充”产生的电池剧烈发热，延长电池寿命并防止降频卡顿。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Private Protocol vs PD Table -->
+    <section id="fallback-tiers">
+      <h3 class="section-title">🔄 设备端的协议仲裁回退梯队：私有闪充 · UFCS · PD/PPS · 保底慢充</h3>
+      <p class="section-subtitle">国产手机普遍拥有 80W~240W 私有超级闪充。当用户接入第三方充电器时，手机内部的受电协议栈是如何按照优先级阶梯优雅回退的？</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>降级梯队</th>
+              <th>握手协议目标</th>
+              <th>设备端行为 (Sink)</th>
+              <th>充电器端反馈 (Source)</th>
+              <th>典型功率与受电特征</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Tier 1：满血直充</strong></td>
+              <td><strong>品牌私有闪充协议</strong><br>(SCP / Turbo / VOOC / FlashCharge)</td>
+              <td>在 D+/D- 或 CC 线上发送厂商专用特征脉冲与密文身份令牌。</td>
+              <td>• <strong>原装充电头：</strong>密文解密应答成功，解除 5V 限制；<br>• <strong>第三方充头：</strong>无法识别忽略，50ms 握手超时。</td>
+              <td><span style="color:var(--accent-rose); font-weight:700;">80W ~ 120W ~ 240W</span><br>激活机内电荷泵直充或双电芯分压，全速满血输出。</td>
+            </tr>
+            <tr>
+              <td><strong>Tier 2：融合快充</strong></td>
+              <td><strong>UFCS 融合快充</strong><br>(信通院/终端快充协会标准)</td>
+              <td>私有握手超时后，手机向充头发起 UFCS 探测报文（支持 CC 或 D+/D-）。</td>
+              <td>第三方充头若支持 UFCS，回复其支持的可编程电压区间（3.4V~36V）。</td>
+              <td><span style="color:var(--accent-purple); font-weight:700;">33W ~ 44W ~ 65W ~ 88W</span><br>跨品牌通用快充，电荷泵直充低发热补电。</td>
+            </tr>
+            <tr>
+              <td><strong>Tier 3：标准微调</strong></td>
+              <td><strong>USB-PD 3.0 PPS 动态直充</strong><br>(公开协议栈)</td>
+              <td>手机协议芯片监听 CC 线上的 PD Source Capabilities，查找 PPS APDO。</td>
+              <td>充头广播如 3.3V~21V @ 3A~5A 的 PPS 可选档位。</td>
+              <td><span style="color:var(--accent-emerald); font-weight:700;">27W ~ 45W ~ 65W</span><br>小米握手 65W，三星握手 45W，电荷泵直充。</td>
+            </tr>
+            <tr>
+              <td><strong>Tier 4：通用高压</strong></td>
+              <td><strong>USB-PD Fixed 固定档位</strong><br>(标准 SPR 固定档)</td>
+              <td>若无匹配 PPS 档位（如很多华为、OPPO手机），请求标准固定电压。</td>
+              <td>充头确认请求并输出标准 Fixed 9.0V / 2.0A 或 9.0V / 3.0A。</td>
+              <td><span style="color:var(--accent-blue); font-weight:700;">18W ~ 27W</span><br>由机内传统 Buck 电路降压充入电芯，温和补电。</td>
+            </tr>
+            <tr>
+              <td><strong>Tier 5：安全兜底</strong></td>
+              <td><strong>USB BC 1.2 / 5V DCP</strong><br>(无协议基础供电)</td>
+              <td>所有高级数字通信均未建立（如普通车载 A 口或老旧充电头）。</td>
+              <td>充电头将 D+ 与 D- 内部短接广播 DCP 模式。</td>
+              <td><span style="color:var(--text-muted); font-weight:700;">2.5W ~ 7.5W (5V / 0.5A ~ 1.5A)</span><br>基础慢充（BC 1.2 规范法定上限为 1.5A，亦严格允许 0.5A 阶梯回退），绝对确保任意设备零风险充电。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>USB-PD 快充架构指南 · 受电端 (Sink) 篇</p>
+      <p style="margin-top: 6px; font-size: 0.8rem;">
+        关联页面：<a href="usb_pd_guide.html" style="color:var(--accent-emerald);">总览指南</a> ·
+        <a href="charger.html" style="color:var(--accent-emerald);">充电器 (Source)</a> ·
+        <a href="cable.html" style="color:var(--accent-emerald);">充电线 (Cable)</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="js/common.js"></script>
+  <script>
+    // Theme Switcher
+    const themeBtn = document.getElementById('themeToggle');
+    const htmlEl = document.documentElement;
+    const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    setTheme(savedTheme);
+    themeBtn.addEventListener('click', () => {
+      const current = htmlEl.getAttribute('data-theme') || 'dark';
+      setTheme(current === 'dark' ? 'light' : 'dark');
+    });
+    function setTheme(theme) {
+      if (theme === 'light') {
+        htmlEl.setAttribute('data-theme', 'light');
+        themeBtn.textContent = '☀️';
+        localStorage.setItem('theme', 'light');
+      } else {
+        htmlEl.removeAttribute('data-theme');
+        themeBtn.textContent = '🌙';
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+
+    // Cross-page navigation dropdown toggle (for touch/click & accessibility)
+    const crossDropdown = document.getElementById('crossNavDropdown');
+    if (crossDropdown) {
+      const crossTrigger = crossDropdown.querySelector('.cross-nav-trigger');
+      crossTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        crossDropdown.classList.toggle('open');
+        crossTrigger.setAttribute('aria-expanded', crossDropdown.classList.contains('open'));
+      });
+      document.addEventListener('click', (e) => {
+        if (!crossDropdown.contains(e.target)) {
+          crossDropdown.classList.remove('open');
+          crossTrigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          crossDropdown.classList.remove('open');
+          crossTrigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
+    // Category Filter & Search Engine
+    let currentCategory = 'all';
+
+    function filterDevices(category) {
+      currentCategory = category;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.target === category);
+      });
+      applyDeviceFilters();
+    }
+
+    function searchDevices() {
+      applyDeviceFilters();
+    }
+
+    function applyDeviceFilters() {
+      const query = (document.getElementById('deviceSearch')?.value || '').trim().toLowerCase();
+      const rows = document.querySelectorAll('.device-table tbody tr.device-row');
+      const groupHeaders = document.querySelectorAll('.device-table tbody tr.table-group-header');
+
+      const visibleCounts = { phone: 0, audio: 0, pad: 0, pc: 0, game: 0 };
+
+      rows.forEach(row => {
+        const cat = row.dataset.cat;
+        const text = row.textContent.toLowerCase();
+        const matchesCategory = (currentCategory === 'all' || cat === currentCategory);
+        const matchesQuery = (!query || text.includes(query));
+
+        if (matchesCategory && matchesQuery) {
+          row.style.display = '';
+          if (visibleCounts[cat] !== undefined) visibleCounts[cat]++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      groupHeaders.forEach(header => {
+        const cat = header.dataset.cat;
+        if (currentCategory === 'all') {
+          header.style.display = visibleCounts[cat] > 0 ? '' : 'none';
+        } else {
+          header.style.display = (cat === currentCategory && visibleCounts[cat] > 0) ? '' : 'none';
+        }
+      });
+
+      // Handle empty state
+      const emptyRow = document.getElementById('deviceEmptyRow');
+      const totalVisible = Object.values(visibleCounts).reduce((a, b) => a + b, 0);
+      if (emptyRow) {
+        emptyRow.style.display = totalVisible === 0 ? '' : 'none';
+      }
+
+      if (window.refreshTableTruncation) {
+        window.refreshTableTruncation();
+      }
+    }
+
+    // Dynamic Negotiation Engine
+    function runNegotiation() {
+      const dev = document.getElementById('devSelect').value;
+      const chg = parseInt(document.getElementById('chargerSelect').value);
+      const cab = document.getElementById('cableSelect').value;
+
+      // Cable max current & epr flag
+      let cableMaxI = (cab === '3a') ? 3.0 : 5.0;
+      let cableEpr = (cab === '240w');
+
+      let power = 0;
+      let modeText = "";
+      let note = "";
+
+      if (dev === 'airpods') {
+        power = 4.0;
+        modeText = "USB 5.0V @ 0.8A (小电流充电)";
+        note = "🎧 耳机充电仓策略：仅请求标准 5V 低压。注意：在多口氮化镓充电头充满末期电流降至 20mA 时，若充电头无微电流模式可能会误切断输出。";
+      } else if (dev === 'watch') {
+        power = 7.5;
+        modeText = "USB 5.0V @ 1.5A (磁吸快充)";
+      } else if (dev === 'iphone18') {
+        // iPhone 18 Pro / 17 Pro: up to 60W via USB-PD 3.1/3.2 AVS
+        if (chg >= 65) {
+          power = 60.0;
+          modeText = "PD 3.1 AVS 15.0V~20.0V @ 3.0A (60W 极速直充)";
+          note = "🚀 iPhone 18 Pro 达成 60W AVS 满血快充！约 15 分钟充入 50%。机身向充头微步进请求精准电压，发热大幅降低；普通 3A 线即可跑满 60W。";
+        } else if (chg >= 30) {
+          power = 40.0;
+          modeText = "PD 3.1 AVS 动态稳态 40.0W";
+          note = "握手 Apple 40W 动态电源模式，约 20 分钟充入 50%。";
+        } else {
+          power = 20.0;
+          modeText = "Fixed 9.0V @ 2.22A (无 AVS 基础档)";
+          note = "⚠️ 充头仅 20W 且缺乏 AVS 协议支持，回退至基础 20W 固定电压慢充。";
+        }
+      } else if (dev === 'iphone') {
+        // iPhone max ~27W (9V/3A)
+        let v = (chg >= 20) ? 9.0 : 5.0;
+        let i = Math.min(3.0, cableMaxI);
+        power = v * i;
+        if (power > 27.0) power = 27.0;
+        modeText = `Fixed ${v.toFixed(1)}V @ ${(power/v).toFixed(2)}A`;
+        note = "📱 iPhone 15/16 策略：握手 9V 黄金固定档。即使插在 140W/240W 充头上，手机也只向充头索要 27W 固定电压，机身电池完全受控，发热温和。";
+      } else if (dev === 'samsung') {
+        // Samsung S25/S26 Ultra ~45W~60W PPS
+        if (chg >= 100 && cableMaxI >= 5.0) {
+          power = 60.0;
+          modeText = "PPS 动态直充 15.0V~20.0V @ 3.0A~4.5A (SFC 3.0)";
+          note = "⚡ 触发三星 Super Fast Charging 3.0 (60W)！通过高功率 PPS 档位实现低发热疾速直充。";
+        } else if (chg >= 65) {
+          power = 45.0;
+          modeText = "PPS 动态直充 10.0V @ 4.5A 或 15.0V @ 3.0A (SFC 2.0)";
+          note = "⚡ 触发三星 Super Fast Charging 2.0 (45W)！S25 Ultra 支持 15V/3A，搭配普通 3A 线亦可满血握手 45W 蓝圈快充。";
+        } else if (chg >= 30) {
+          power = 25.0;
+          modeText = "PPS / Fixed 9.0V @ 2.77A";
+          note = "充头 PPS 输出能力受限，手机安全降级至 25W 模式。";
+        } else {
+          power = 18.0;
+          modeText = "Fixed 9.0V @ 2.0A";
+          note = "充头额定功率较小，稳定运行在 18W 基础快充。";
+        }
+      } else if (dev === 'xiaomi') {
+        // Xiaomi Flagship: 100W/120W private, open to 65W~100W PPS and UFCS
+        if (chg >= 100 && cableMaxI >= 5.0) {
+          power = 100.0;
+          modeText = "全速开放 PPS 20.0V @ 5.0A (100W 满血直充)";
+          note = "🇨🇳 小米17 旗舰策略：跳过16直升17全面对标iPhone！机身全系兼容 100W PPS 开放通用协议，搭配第三方 100W PPS 充电头与 5A 线亦可满血握手 100W 极速秒充！";
+        } else if (chg >= 65 && cableMaxI >= 5.0) {
+          power = 65.0;
+          modeText = "公开 PPS 20.0V @ 3.25A (65W 直充)";
+          note = "🇨🇳 小米旗舰策略：顺利握手第三方充头的 20V/3.25A PPS 档位，跑满 65W 高速快充！同时支持 UFCS 融合快充。";
+        } else if (chg >= 30) {
+          power = 27.0;
+          modeText = "Fixed 9.0V @ 3.0A (27W PD)";
+          note = "线缆或充头受限，安全降级至标准 9V/3A PD 固定档。";
+        } else {
+          power = 18.0;
+          modeText = "Fixed 9.0V @ 2.0A (18W PD)";
+          note = "充头功率较低，稳定运行在 18W 基础快充。";
+        }
+      } else if (dev === 'huawei') {
+        // Huawei Flagship: SuperCharge private / UFCS / 18W PD fallback
+        if (chg >= 30) {
+          power = 18.0;
+          modeText = "Fixed 9.0V @ 2.0A (18W PD 兼容档)";
+          note = "🇨🇳 华为/荣耀策略：第三方普通 PD 充头无 SCP 私有加密协议，手机回退至标准 9V/2A (18W) 慢充；若更换为支持 UFCS 融合快充的充头，可立刻跃升至 40W~66W！";
+        } else {
+          power = 10.0;
+          modeText = "Fixed 5.0V @ 2.0A (10W 基础供电)";
+          note = "小功率充头安全慢充兜底。";
+        }
+      } else if (dev === 'oppo') {
+        // OPPO / OnePlus: SuperVOOC private / UFCS / 18W PD fallback
+        if (chg >= 30) {
+          power = 18.0;
+          modeText = "Fixed 9.0V @ 2.0A (18W PD 兼容档)";
+          note = "🇨🇳 OPPO/一加策略：脱离原装 SuperVOOC 充头后，机内串联双电芯改由通用降压电路接管，功率被安全锁定在 18W~27W；搭配 UFCS 充头可解锁 33W~44W 融合快充。";
+        } else {
+          power = 10.0;
+          modeText = "Fixed 5.0V @ 2.0A (10W 基础供电)";
+          note = "小功率充头安全慢充兜底。";
+        }
+      } else if (dev === 'vivo') {
+        // vivo / iQOO: FlashCharge private / UFCS / 55W PPS on iQOO
+        if (chg >= 65 && cableMaxI >= 5.0) {
+          power = 55.0;
+          modeText = "PPS 11.0V @ 5.0A (55W 兼容直充)";
+          note = "🇨🇳 vivo/iQOO 策略：部分 iQOO 旗舰开放了 11V/5A PPS 兼容协议，跑出 55W 快速直充；标准 vivo 机型则回退至 9V/3A (27W) 或 UFCS 44W 融合快充。";
+        } else if (chg >= 30) {
+          power = 27.0;
+          modeText = "Fixed 9.0V @ 3.0A (27W PD)";
+          note = "回退至标准 9V/3A PD 档位。";
+        } else {
+          power = 18.0;
+          modeText = "Fixed 9.0V @ 2.0A (18W PD)";
+          note = "小功率充头安全慢充兜底。";
+        }
+      } else if (dev === 'pixel') {
+        // Pixel
+        if (chg >= 65) {
+          power = 37.0;
+          modeText = "PPS 11.0V @ 3.36A";
+          note = "🤖 Google Pixel 策略：完全遵循 USB-IF 标准，严谨执行 PPS 调压，最高跑满 37W 峰值功率。";
+        } else {
+          power = (chg === 20) ? 18.0 : 30.0;
+          modeText = `Fixed 9.0V @ ${(power/9).toFixed(1)}A`;
+          note = "根据充头能力自适应匹配 18W~30W 功率。";
+        }
+      } else if (dev === 'ipad') {
+        // iPad Pro M4/M5 ~38W-60W (requires 15V/20V)
+        if (chg >= 65) {
+          power = 60.0;
+          modeText = "Fixed 20.0V @ 3.0A (60W 满血快充)";
+          note = "📟 M5 iPad Pro 满速快充！利用 20V/3A 高压档位，约 30 分钟即可充入 50%，双电芯高效充能。";
+        } else if (chg >= 30) {
+          power = 38.0;
+          modeText = "Fixed 15.0V @ 2.5A";
+          note = "稳定运行在 15V 黄金档位，满足 M4 时代 38W 最佳充电曲线。";
+        } else {
+          power = 18.0;
+          modeText = "Fixed 9.0V @ 2.0A (缺少15V/20V慢充)";
+          note = "⚠️ 充头缺少 15V/20V 高压档位，iPad 被迫降至 18W 龟速补电。";
+        }
+      } else if (dev === 'kindle') {
+        power = 7.5;
+        modeText = "Fixed 5.0V @ 1.5A";
+        note = "📖 电纸书策略：功耗极低，仅需 5V 基础供电，机内发热极小。";
+      } else if (dev === 'air') {
+        // MacBook Air 65W
+        if (chg >= 65) {
+          power = 65.0;
+          modeText = "SPR Fixed 20.0V @ 3.25A";
+          note = "💻 MacBook Air 策略：使用标准 3A 线缆即可跑满 65W，完全满足办公和高负荷需求。";
+        } else {
+          power = (chg === 20) ? 20.0 : chg;
+          modeText = "自适应低功率维持";
+          note = "充头功率较低，可慢充补电但高负荷时充能变缓。";
+        }
+      } else if (dev === 'mbp14') {
+        // MacBook Pro 14" ~100W
+        if (chg >= 100 && cableMaxI >= 5.0) {
+          power = 96.0;
+          modeText = "SPR Fixed 20.0V @ 4.8A";
+          note = "💻 MacBook Pro 14 策略：SPR 体系极限，必须 5A 线缆支持才能满血跑满 96W~100W。";
+        } else if (chg >= 65) {
+          power = (cableMaxI === 3.0) ? 60.0 : 65.0;
+          modeText = "SPR Fixed 20.0V @ 3.0A/3.25A";
+          note = "受线缆 3A 或充头功率限制，自适应降为 60W~65W 供电。";
+        } else {
+          power = 20.0;
+          modeText = "应急慢充维持";
+          note = "功率严重不足，仅能休眠补电。";
+        }
+      } else if (dev === 'macbook') {
+        // MacBook Pro 16" 140W EPR 28V
+        if (chg >= 140 && cableEpr) {
+          power = 140.0;
+          modeText = "EPR Fixed 28.0V @ 5.0A";
+          note = "🍏 达成 140W EPR 满血快充！充电器提供 28V，线缆具备 50V 耐压认证，MacBook Pro 16 内部 Buck 降压给三电芯电池充能。";
+        } else if (chg >= 100 && cableMaxI >= 5.0) {
+          power = 100.0;
+          modeText = "SPR Fixed 20.0V @ 5.0A";
+          note = "线缆缺少 EPR 认证或充头仅为 100W，握手降级至传统 100W SPR 供电。";
+        } else if (chg >= 65) {
+          power = (cableMaxI === 3.0) ? 60.0 : 65.0;
+          modeText = `SPR Fixed 20.0V @ ${(power/20).toFixed(2)}A`;
+          note = "受限 3A 线缆或 65W 充头，满载渲染时可能会边充边微降电量。";
+        } else {
+          power = 20.0;
+          modeText = "Fixed 9.0V / 20.0V (缓慢补电)";
+          note = "20W 充头仅能维持亮屏不掉电或休眠慢充。";
+        }
+      } else if (dev === 'gaming') {
+        // Gaming laptop 240W
+        if (chg >= 240 && cableEpr) {
+          power = 240.0;
+          modeText = "EPR AVS 48.0V @ 5.0A";
+          note = "🎮 240W 极致快充达成！48V AVS 动态高压母线直驱，支持高负载旁路供电（Bypass），彻底告别砖头电源。";
+        } else if (chg >= 140 && cableEpr) {
+          power = 140.0;
+          modeText = "EPR Fixed 28.0V @ 5.0A";
+          note = "充头最高 140W，游戏本自适应握手 140W，日常轻度使用足够，大型 3A 游戏时开启电池混合放电。";
+        } else if (cableMaxI >= 5.0) {
+          power = 100.0;
+          modeText = "SPR Fixed 20.0V @ 5.0A (锁死100W)";
+          note = "线缆缺少 EPR 认证，系统只能运行在 100W SPR 模式。";
+        } else {
+          power = 60.0;
+          modeText = "SPR 20.0V @ 3.0A (基础应急)";
+          note = "3A 普通线缆瓶颈，受限 60W。";
+        }
+      } else if (dev === 'switch_dock') {
+        // Switch Dock
+        if (chg >= 65 || chg === 140 || chg === 240) {
+          power = 39.0;
+          modeText = "Fixed 15.0V @ 2.6A (底座模式成功)";
+          note = "🎮 Switch TV 底座点亮成功！必须由充头广播 15V/2.6A+ 档位，底座才能激活视频输出芯片并给机身供电。";
+        } else {
+          power = 0;
+          modeText = "❌ 握手失败 / TV底座黑屏";
+          note = "⚠️ 避坑提醒：20W 手机充头缺少 15V 档位，Switch 底座检测不到 15V/2.6A 强制要求，拒绝点亮电视！";
+        }
+      } else if (dev === 'switch_hand') {
+        power = (chg >= 20) ? 18.0 : 10.0;
+        modeText = "Fixed 15.0V @ 1.2A 或 9.0V @ 2.0A";
+        note = "掌机模式对协议宽容度极高，9V 或 15V 均可边玩边充。";
+      } else if (dev === 'steamdeck') {
+        if (chg >= 65 || chg >= 140) {
+          power = 45.0;
+          modeText = "Fixed 15.0V @ 3.0A";
+          note = "🎮 Steam Deck 满血供电！APU 跑满 15W TDP，支持边充边玩与电池直通旁路供电。";
+        } else {
+          power = (chg === 20) ? 18.0 : chg;
+          modeText = "降功率慢充";
+          note = "充头功率不足，游戏满载时可能掉电。";
+        }
+      }
+
+      document.getElementById('resPower').textContent = `${power.toFixed(1)} W`;
+      document.getElementById('resMode').textContent = modeText;
+      document.getElementById('resNote').textContent = note;
+
+      // Update log steps
+      document.getElementById('step2').textContent = `[2] SOP' 读线：检测线缆容量 -> ${cableMaxI}A，EPR认证 -> ${cableEpr ? 'YES (50V)' : 'NO'}`;
+      document.getElementById('step3').textContent = `[3] SOP 接收：充电头广播 -> 最高 ${chg}W 供电能力`;
+      document.getElementById('step4').textContent = `[4] Sink 决策：根据策略请求 -> ${modeText}`;
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      runNegotiation();
+    });
+  </script>
+</body>
+</html>

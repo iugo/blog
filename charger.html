@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>充电器 (Source 供电端) 协议规范与实现机制 | USB-PD 快充生态</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/charger.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container nav-bar">
+      <a href="usb_pd_guide.html" class="logo-group">
+        <div class="logo-badge">⚡</div>
+        <div class="logo-text">
+          <h1>USB-PD 快充生态架构</h1>
+          <span>Source · Cable · Sink</span>
+        </div>
+      </a>
+      <div class="nav-actions">
+        <!-- 跨页生态切换下拉框 -->
+        <div class="cross-nav-dropdown" id="crossNavDropdown">
+          <button class="cross-nav-trigger" type="button" aria-expanded="false" aria-haspopup="true">
+            <span class="cross-nav-curr">🔌 充电器</span>
+            <span class="cross-nav-arrow">▾</span>
+          </button>
+          <div class="cross-nav-menu">
+            <div class="cross-nav-header">切换生态页面</div>
+            <a href="usb_pd_guide.html" class="cross-nav-item">
+              <span class="cross-nav-icon">⚡</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">总览指南 (Guide)</span>
+                <span class="cross-nav-desc">PD 3.x · 演进脉络与协议大全</span>
+              </div>
+            </a>
+            <a href="charger.html" class="cross-nav-item active">
+              <span class="cross-nav-icon">🔌</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">供电端 (Source)</span>
+                <span class="cross-nav-desc">PDO 广播 · 握手状态机 · 消弧保护</span>
+              </div>
+              <span class="cross-nav-status">✓</span>
+            </a>
+            <a href="cable.html" class="cross-nav-item">
+              <span class="cross-nav-icon">🧵</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">充电线 (Cable)</span>
+                <span class="cross-nav-desc">E-Marker 芯片 · 240W 安全保护机制</span>
+              </div>
+            </a>
+            <a href="device.html" class="cross-nav-item">
+              <span class="cross-nav-icon">📱</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">被充电设备 (Sink)</span>
+                <span class="cross-nav-desc">Request 决策 · 电荷泵直充与回退</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- 视觉分割线 -->
+        <div class="nav-divider" aria-hidden="true"></div>
+
+        <!-- 本页章节锚点直达 -->
+        <ul class="inpage-nav">
+          <li><a href="#step-by-step">核心流转</a></li>
+          <li><a href="#pdo-broadcast">PDO广播</a></li>
+          <li><a href="#protocol-arbiter">多协议仲裁</a></li>
+          <li><a href="#safety-gate">安全保护</a></li>
+        </ul>
+
+        <button id="themeToggle" class="theme-toggle-btn" title="切换暗色/亮色模式">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">⚡ 供电端角色与协议机制</div>
+      <h2>
+        充电器（Source 供电端）<br>
+        <span class="gradient-text">如何遵循 USB PD 与多充电协议？</span>
+      </h2>
+      <p>
+        在 USB-C 供电拓扑中，充电头是能力广播者、电力输出网关与物理安全守护者。
+        它必须时刻监控 CC 脚阻抗、读取线缆芯片、广播供电能力（PDO），并在微秒内应对过载与拔脱。
+      </p>
+    </section>
+
+    <!-- Trio Navigation Links -->
+    <div class="trio-nav">
+      <a href="charger.html" class="trio-card current">
+        <div class="trio-icon">🔌</div>
+        <div class="trio-info">
+          <h4>充电器 (Source)</h4>
+          <p>当前页面 · 广播供电能力与安全断电</p>
+        </div>
+      </a>
+      <a href="cable.html" class="trio-card">
+        <div class="trio-icon">🧵</div>
+        <div class="trio-info">
+          <h4>充电线 (Cable)</h4>
+          <p>E-Marker 芯片 · 50V 耐压与安全保护</p>
+        </div>
+      </a>
+      <a href="device.html" class="trio-card">
+        <div class="trio-icon">📱</div>
+        <div class="trio-info">
+          <h4>被充电设备 (Sink)</h4>
+          <p>功率决策者 · 电池温控与电荷泵直充</p>
+        </div>
+      </a>
+    </div>
+
+    <!-- Terminology Metaphor Callout -->
+    <div class="metaphor-callout">
+      <div style="display: flex; align-items: flex-start; gap: 14px;">
+        <span style="font-size: 2rem; line-height: 1;">💡</span>
+        <div>
+          <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">
+            术语趣解：为什么供电端叫 Source，受电端叫 Sink（水槽）？
+          </h4>
+          <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7;">
+            很多初学者看到英文规范时会疑惑：充电头叫 <strong>Source</strong> 还能理解为“电源”，但手机/电脑怎么叫 <strong>Sink（水槽/下沉）</strong>？
+            这源于电气工程经典的<strong>“水流模型（Fluid Metaphor）”</strong>：
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 14px;">
+            <div class="callout-subcard">
+              <strong style="color: var(--accent-blue); font-size: 0.92rem;">🚰 电源 = 水源泉眼 (Source)</strong>
+              <p style="font-size: 0.83rem; color: var(--text-secondary); margin-top: 5px; line-height: 1.55;">
+                在电路学中，电荷源源不断流出的地方被称为<strong>“源（Current Source）”</strong>。充电器就是向线缆 VBUS 管道持续注入电荷能量的源泉。
+              </p>
+            </div>
+            <div class="callout-subcard">
+              <strong style="color: var(--accent-emerald); font-size: 0.92rem;">🛁 负载 = 汇聚水槽 (Sink)</strong>
+              <p style="font-size: 0.83rem; color: var(--text-secondary); margin-top: 5px; line-height: 1.55;">
+                类似厨房洗菜的水槽（Kitchen Sink）承接并汇集水流，电路中吸收、消耗或蓄存电荷的负载被称为<strong>“汇（Current Sink）”</strong>。手机电池正是吸收电能的“蓄水容器”。
+              </p>
+            </div>
+            <div class="callout-subcard">
+              <strong style="color: var(--accent-purple); font-size: 0.92rem;">🔄 双角色电源：DRP (Dual-Role)</strong>
+              <p style="font-size: 0.83rem; color: var(--text-secondary); margin-top: 5px; line-height: 1.55;">
+                带有水泵的水库（如充电宝/笔记本）：插插座充自己时是 <strong>Sink（蓄水）</strong>；拔下来给手机放电时瞬间变为 <strong>Source（供水）</strong>。这就是双角色 <strong>DRP</strong>。
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core Mechanism Section -->
+    <section id="step-by-step">
+      <h3 class="section-title">🧭 充电器遵循 PD 协议的核心流程与状态机</h3>
+      <p class="section-subtitle">从插上插座到输出百瓦高压，充电器内部的协议芯片经历着极其严苛的五步流转：</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>1. 物理阻抗感应 (Rp 上拉)</h3>
+          <p>未连接时，充电器的 VBUS 供电引脚是<strong>完全断电（0V）</strong>的！只有 CC1 与 CC2 针脚接有 Rp 上拉电阻。</p>
+          <ul>
+            <li>检测受电设备的 Rd (5.1kΩ) 下拉；</li>
+            <li>检测哪一根针脚被拉低，判定插头正反插方向；</li>
+            <li>给另一根未连接的 CC 引脚提供 <strong>VCONN 供电</strong>以点亮线缆内置芯片。</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>2. 读取线缆身份 (SOP' 握手)</h3>
+          <p>给线缆供电后，充电器在输出高压前，必须先在 CC 线向线缆发送 <code>Discover Identity</code> 请求：</p>
+          <ul>
+            <li>读取线缆是普通 3A 线还是 5A 线；</li>
+            <li>检测线缆是否具备 <strong>EPR Mode Capable = 1</strong>（50V 耐压认证）；</li>
+            <li>若线缆不支持 EPR，充头将<strong>彻底锁死在 ≤100W SPR 范围</strong>。</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>3. 广播供电能力 (Source Cap)</h3>
+          <p>在默认 5V 电压下，通过 BMC 编码向受电端广播自己支持的全部电力数据对象（PDO）：</p>
+          <ul>
+            <li><strong>Fixed PDO：</strong>如 5V/3A, 9V/3A, 15V/3A, 20V/5A, 28V/5A；</li>
+            <li><strong>PPS APDO：</strong>如 3.3V~21V @ 5A；</li>
+            <li><strong>AVS APDO：</strong>如 15V~28V 或 15V~48V (100mV 步进)。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Broadcaster Simulator -->
+    <section id="pdo-broadcast">
+      <h3 class="section-title">🧪 互动演练：不同功率充电器广播的报文清单 (PDO Broadcast)</h3>
+      <p class="section-subtitle">选择不同功率规格的合规充电器，实时查看其依据 USB-IF 规则必须广播的供电档位：</p>
+
+      <div class="sim-box">
+        <div class="sim-header">
+          <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-secondary);">选择充电器规格：</span>
+          <div class="preset-group" style="margin-top: 10px;">
+            <button class="preset-btn" onclick="selectCharger(20)">20W 手机迷你头</button>
+            <button class="preset-btn" onclick="selectCharger(30)">30W 平板充电头</button>
+            <button class="preset-btn" onclick="selectCharger(65)">65W 笔记本充头</button>
+            <button class="preset-btn" onclick="selectCharger(100)">100W 桌面充头 (SPR天花板)</button>
+            <button class="preset-btn active" onclick="selectCharger(140)">140W 氮化镓充头 (MacBook Pro 16")</button>
+            <button class="preset-btn" onclick="selectCharger(240)">240W 极客游戏本充头 (EPR天花板)</button>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-weight: 700; font-size: 1rem; margin-bottom: 8px;" id="chargerTitle">
+            140W 氮化镓充电器 (USB PD 3.1 EPR)
+          </div>
+          <div style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 14px;" id="chargerRuleNote">
+            根据规范：功率 > 100W，必须强制支持 28V Fixed 档与 15V~28V AVS 档；若支持 PD 3.2，还须在 >27W 区间支持 SPR AVS。
+          </div>
+
+          <div class="pdo-display-list" id="pdoListContainer">
+            <!-- Dynamic PDO Items -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Multi-Protocol Coexistence Section -->
+    <section id="protocol-arbiter">
+      <h3 class="section-title">🔀 充电器如何兼容中国厂商私有协议与 UFCS 融合快充？</h3>
+      <p class="section-subtitle">
+        市售主流充电器（特别是氮化镓多口充）不仅支持 USB-PD，还广泛兼容 UFCS、华为 SCP、小米秒充、OPPO SuperVOOC、vivo 闪充等。充电器内部的多协议主控芯片是如何在毫秒内完成仲裁，确保“百瓦高功率直出且绝不烧坏小设备”的？
+      </p>
+
+      <!-- Protocol Arbitration Table -->
+      <div class="table-wrapper" style="margin-bottom: 30px;">
+        <table>
+          <thead>
+            <tr>
+              <th>协议名称</th>
+              <th>主导阵营</th>
+              <th>物理层通信介质</th>
+              <th>调压机制与特性</th>
+              <th>充电器端的仲裁与冲突处理</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>USB-PD 3.x</strong></td>
+              <td>USB-IF 国际标准</td>
+              <td>Type-C <strong>CC 针脚</strong> (BMC 双向数字编码)</td>
+              <td>固定档 5/9/15/20/28V；AVS (100mV)；PPS (20mV)</td>
+              <td><strong>通用最高基准</strong>。充电器默认以 5V 启动并持续监听 CC 握手报文；合规充头在 PD 激活时自动锁死非标高压，防止误触发。</td>
+            </tr>
+            <tr>
+              <td><strong>UFCS 融合快充</strong></td>
+              <td>中国信通院 / TAF / FCA 联盟</td>
+              <td><strong>CC 针脚</strong> 或 <strong>D+/D-</strong> (双模支持)</td>
+              <td>连续调压 (10mV/20mV/100mV 步进)，涵盖 3.4V~36V</td>
+              <td>跨品牌通用融合快充。充电器协议芯片支持 UFCS 握手包，若受电端响应 UFCS 探测，充头进入 40W~65W+ 融合直充模式。</td>
+            </tr>
+            <tr>
+              <td><strong>小米 Mi Turbo Charge</strong></td>
+              <td>小米科技 (Xiaomi)</td>
+              <td>CC 针脚 或 <strong>USB-A 魔改第5针</strong></td>
+              <td>澎湃自研算法，高压/低压电荷泵直充 (67W/90W/120W)</td>
+              <td>充头主控内置小米私有认证算法，检测到特定私有加密脉冲后解锁 11V/6.1A 或 20V/6A 私有档位；对公开 PD/PPS 开放兼容。</td>
+            </tr>
+            <tr>
+              <td><strong>OPPO SuperVOOC</strong></td>
+              <td>欧加集团 (OPPO/一加/realme)</td>
+              <td>CC 针脚 或 <strong>USB-A 7-Pin 触点</strong></td>
+              <td><strong>串联双电芯 (2S) 直充</strong> (10V/6.5A, 11V/7.3A, 11V/9.1A)</td>
+              <td>充头主控需通过专属加密握手确认双电芯架构，方才解除 5V 限制直通升流；若握手未通过坚决不放电。</td>
+            </tr>
+            <tr>
+              <td><strong>华为 SuperCharge (SCP)</strong></td>
+              <td>华为技术 (Huawei) / 荣耀</td>
+              <td>CC 针脚 或 <strong>D+/D- 模拟脉冲</strong></td>
+              <td>低压大电流 (4.5V/5A, 10V/4A) / 高压 (11V/6A, 20V/5A)</td>
+              <td>充头内部集成华为专属识别模块，检测 D+/D- 上的私有串行指令，自动在低压直充与高压直充间动态切换。</td>
+            </tr>
+            <tr>
+              <td><strong>vivo FlashCharge</strong></td>
+              <td>vivo / iQOO</td>
+              <td>CC 针脚 或 专用触点加密握手</td>
+              <td>三路电荷泵并联分流 (11V/7.3A, 20V/6A 120W)</td>
+              <td>充头需与手机完成双向内阻测量与加密校验，确认线材为专属低阻粗线后方才开放超百瓦峰值。</td>
+            </tr>
+            <tr>
+              <td><strong>高通 QC 2.0/3.0/4+</strong></td>
+              <td>高通 (Qualcomm)</td>
+              <td>D+ / D- 针脚 (模拟分压设定)</td>
+              <td>固定档 9V/12V 或 200mV 步进调节</td>
+              <td>通过检测 D+/D- 模拟电平切换。现代多协议充头优先握手 PD/UFCS，只有纯 QC 设备插入时才激活 D+/D- 模拟调压。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Multi-Protocol Controller IC & 5th Pin Hardware Dive -->
+      <div class="grid-2">
+        <div class="card">
+          <h3>🎛️ 多协议主控芯片 (SoC) 的毫秒级轮询状态机</h3>
+          <p>以英集芯 (Injoinic)、南芯科技 (SouthChip)、智融科技 (iSmartWare) 等主流芯片为例，充电器内部执行严格的时序仲裁：</p>
+          <ul>
+            <li><strong>T0 (物理插入)：</strong>检测 CC 针脚阻抗变化（发现 Rd 下拉），确认设备接入；</li>
+            <li><strong>T1 (私有优先刺探)：</strong>在 50ms 窗口期内，充头向 D+/D- 和 CC 线同时发出极其微弱的特定特征脉冲（私有握手令牌）；</li>
+            <li><strong>T2 (私有匹配成功)：</strong>若收到华为 SCP、小米或 VOOC 的私有密文响应，协议芯片立即切入对应品牌的私有直充状态机（输出 67W~120W+）；</li>
+            <li><strong>T3 (通用标准回退)：</strong>若 50ms 内无私有应答，充头立即在 CC 线上广播标准的 USB PD <code>Source_Capabilities</code>，与笔记本、iPhone 等建立标准 PD/PPS 链路；</li>
+            <li><strong>T4 (UFCS 双向探测)：</strong>若受电设备支持 UFCS，两端在 CC 或 D+/D- 上建立 UFCS 数字会话，以 40W~65W 优雅直充。</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>🪄 充电器端“魔改 USB-A 口第 5 针”物理黑科技</h3>
+          <p>为什么小米、OPPO 的很多百瓦充电头依然保留着老旧的 USB-A 接口，却能输出 67W 甚至 120W 大功率？</p>
+          <ul>
+            <li><strong>标准 USB-A 的物理死穴：</strong>只有 4 根针（VBUS、D-、D+、GND），没有 Type-C 传输数字握手指令的 CC 针脚，无法做双向高阶协议通信；</li>
+            <li><strong>胶芯深处的第 5 根触针：</strong>中国厂商在 USB-A 母座塑料舌片的最深处增加了一枚独立的弹性触片（弹片探针）；</li>
+            <li><strong>魔改线缆精准接力：</strong>插入原装 A-to-C 线时，插头内部的第 5 根特制接触片正好与母座弹片贴合，<strong>把手机端的 CC 信号原封不动引回充电器芯片</strong>；</li>
+            <li><strong>无缝蜕变为“披着 A 口外衣的 Type-C”：</strong>充电器内部主控借由这根隐藏针脚，直接进行完整的 CC 数字双向握手，彻底突破了传统 USB-A 口的功率封印！</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Protection Mechanism Section -->
+    <section id="safety-gate">
+      <h3 class="section-title">🛡️ 充电器核心硬件保护：为什么能做到“百瓦高压不烧机”？</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h3>⚡ 48V 微秒级断电与消弧泄放 (Arc Extinguishing)</h3>
+          <p>在 EPR 48V 高压输出状态下，如果用户突然拔出数据线：</p>
+          <ul>
+            <li>Type-C 公头内部的 <strong>CC 针脚比 VBUS 供电针脚短 0.5mm</strong>；</li>
+            <li>拔出瞬间，CC 信号先行断开，充电器的主控芯片在 <strong>微秒 (µs) 级</strong> 内瞬间关闭 PWM 并打开接地放电泄放 MOS 管；</li>
+            <li>在 VBUS 物理针脚完全脱离前，高压已被降至安全低电平，从根源消除拉弧与火花。</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>🌡️ 动态过载保护 (OVP / OCP / OTP)</h3>
+          <p>充电器内部持续运转着高精度的硬件监测矩阵：</p>
+          <ul>
+            <li><strong>OVP (过压保护)：</strong>电压超出协商目标值 10% 立即硬件关断；</li>
+            <li><strong>OCP (过流保护)：</strong>在 PPS 模式下做电流折返限流，在 AVS/Fixed 模式下做阶梯断电；</li>
+            <li><strong>OTP (过温保护)：</strong>检测到氮化镓 (GaN) 开关管温度过高时，主动向受电端下发降低功率的广播或直接降功率。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>USB-PD 快充架构指南 · 供电端 (Source) 篇</p>
+      <p style="margin-top: 6px; font-size: 0.8rem;">
+        关联页面：<a href="usb_pd_guide.html" style="color:var(--accent-blue);">总览指南</a> ·
+        <a href="cable.html" style="color:var(--accent-blue);">充电线 (Cable)</a> ·
+        <a href="device.html" style="color:var(--accent-blue);">被充电设备 (Sink)</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="js/common.js"></script>
+  <script>
+    // Theme Switcher
+    const themeBtn = document.getElementById('themeToggle');
+    const htmlEl = document.documentElement;
+    const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    setTheme(savedTheme);
+    themeBtn.addEventListener('click', () => {
+      const current = htmlEl.getAttribute('data-theme') || 'dark';
+      setTheme(current === 'dark' ? 'light' : 'dark');
+    });
+    function setTheme(theme) {
+      if (theme === 'light') {
+        htmlEl.setAttribute('data-theme', 'light');
+        themeBtn.textContent = '☀️';
+        localStorage.setItem('theme', 'light');
+      } else {
+        htmlEl.removeAttribute('data-theme');
+        themeBtn.textContent = '🌙';
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+
+    // Cross-page navigation dropdown toggle (for touch/click & accessibility)
+    const crossDropdown = document.getElementById('crossNavDropdown');
+    if (crossDropdown) {
+      const crossTrigger = crossDropdown.querySelector('.cross-nav-trigger');
+      crossTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        crossDropdown.classList.toggle('open');
+        crossTrigger.setAttribute('aria-expanded', crossDropdown.classList.contains('open'));
+      });
+      document.addEventListener('click', (e) => {
+        if (!crossDropdown.contains(e.target)) {
+          crossDropdown.classList.remove('open');
+          crossTrigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          crossDropdown.classList.remove('open');
+          crossTrigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
+    // Charger Preset Data
+    const chargerData = {
+      20: {
+        title: "20W 手机便携充头 (USB PD 3.0 SPR)",
+        note: "专为手机优化，输出 5V 与 9V 黄金档位，部分支持小范围 PPS。",
+        pdos: [
+          { num: "PDO 1", type: "fixed", label: "Fixed", text: "5.0V @ 3.0A (15.0W)", note: "默认起始协商档位" },
+          { num: "PDO 2", type: "fixed", label: "Fixed", text: "9.0V @ 2.22A (20.0W)", note: "iPhone / iPad 常用档" }
+        ]
+      },
+      30: {
+        title: "30W 平板充头 (USB PD 3.0 / PD 3.2 SPR)",
+        note: "在 PD 3.2 规范中，>27W 充电器强制要求支持 9V~20V SPR AVS。",
+        pdos: [
+          { num: "PDO 1", type: "fixed", label: "Fixed", text: "5.0V @ 3.0A (15.0W)", note: "兼容基础设备" },
+          { num: "PDO 2", type: "fixed", label: "Fixed", text: "9.0V @ 3.0A (27.0W)", note: "中功率手机与平板" },
+          { num: "PDO 3", type: "fixed", label: "Fixed", text: "15.0V @ 2.0A (30.0W)", note: "MacBook Air 慢充 / Switch" },
+          { num: "PDO 4", type: "avs", label: "SPR AVS", text: "9.0V ~ 20.0V (100mV步进)", note: "PD 3.2 规范强制要求 (>27W)" },
+          { num: "PDO 5", type: "pps", label: "PPS", text: "3.3V ~ 11.0V @ 3.0A", note: "可选手机电荷泵直充" }
+        ]
+      },
+      65: {
+        title: "65W 笔记本充头 (USB PD 3.0 / 3.2 SPR)",
+        note: "全功能轻薄本主力充头，满血覆盖 5V、9V、15V、20V 全四档。",
+        pdos: [
+          { num: "PDO 1", type: "fixed", label: "Fixed", text: "5.0V @ 3.0A (15.0W)", note: "基础档" },
+          { num: "PDO 2", type: "fixed", label: "Fixed", text: "9.0V @ 3.0A (27.0W)", note: "快充档" },
+          { num: "PDO 3", type: "fixed", label: "Fixed", text: "15.0V @ 3.0A (45.0W)", note: "超极本档" },
+          { num: "PDO 4", type: "fixed", label: "Fixed", text: "20.0V @ 3.25A (65.0W)", note: "普通 3A 线缆即可承载" },
+          { num: "PDO 5", type: "avs", label: "SPR AVS", text: "9.0V ~ 20.0V (100mV步进)", note: "PD 3.2 规范强制 (>27W)" },
+          { num: "PDO 6", type: "pps", label: "PPS", text: "3.3V ~ 21.0V @ 3.25A", note: "大范围手机 PPS 调压" }
+        ]
+      },
+      100: {
+        title: "100W 桌面级充头 (SPR 最高上限)",
+        note: "SPR 体系天花板，必须搭配 5A E-Marker 线缆方可输出 20V/5A。",
+        pdos: [
+          { num: "PDO 1", type: "fixed", label: "Fixed", text: "5.0V @ 3.0A (15.0W)", note: "基础档" },
+          { num: "PDO 2", type: "fixed", label: "Fixed", text: "9.0V @ 3.0A (27.0W)", note: "快充档" },
+          { num: "PDO 3", type: "fixed", label: "Fixed", text: "15.0V @ 3.0A (45.0W)", note: "超极本档" },
+          { num: "PDO 4", type: "fixed", label: "Fixed", text: "20.0V @ 5.0A (100.0W)", note: "需 5A 线缆握手，SPR极限" },
+          { num: "PDO 5", type: "avs", label: "SPR AVS", text: "9.0V ~ 20.0V (100mV步进)", note: "PD 3.2 强制支持" },
+          { num: "PDO 6", type: "pps", label: "PPS", text: "3.3V ~ 21.0V @ 5.0A", note: "受困于 SPR，无法突破 100W" }
+        ]
+      },
+      140: {
+        title: "140W 氮化镓充头 (USB PD 3.1 EPR - MacBook Pro 16\")",
+        note: "跨入 EPR 扩展功率范围，新增 28V 固定档与 15V~28V EPR AVS 强制档。",
+        pdos: [
+          { num: "PDO 1", type: "fixed", label: "Fixed", text: "5.0V @ 3.0A (15.0W)", note: "SPR 兼容档" },
+          { num: "PDO 2", type: "fixed", label: "Fixed", text: "9.0V @ 3.0A (27.0W)", note: "SPR 兼容档" },
+          { num: "PDO 3", type: "fixed", label: "Fixed", text: "15.0V @ 3.0A (45.0W)", note: "SPR 兼容档" },
+          { num: "PDO 4", type: "fixed", label: "Fixed", text: "20.0V @ 5.0A (100.0W)", note: "SPR 兼容上限" },
+          { num: "PDO 5", type: "fixed", label: "EPR Fixed", text: "28.0V @ 5.0A (140.0W)", note: "必须 240W EPR 认证线缆" },
+          { num: "PDO 6", type: "avs", label: "EPR AVS", text: "15.0V ~ 28.0V (100mV步进)", note: "规范强制：EPR充头必须提供 AVS" }
+        ]
+      },
+      240: {
+        title: "240W 极客游戏本充头 (USB PD 3.1 EPR 物理极限)",
+        note: "USB Type-C 当前最高允许功率，具备 28V、36V、48V 全套高压与 15V~48V AVS。",
+        pdos: [
+          { num: "PDO 1", type: "fixed", label: "Fixed", text: "5.0V / 9V / 15V / 20V", note: "完整 SPR 兼容列表" },
+          { num: "PDO 2", type: "fixed", label: "EPR Fixed", text: "28.0V @ 5.0A (140.0W)", note: "中高功率游戏本" },
+          { num: "PDO 3", type: "fixed", label: "EPR Fixed", text: "36.0V @ 5.0A (180.0W)", note: "移动工作站档位" },
+          { num: "PDO 4", type: "fixed", label: "EPR Fixed", text: "48.0V @ 5.0A (240.0W)", note: "Type-C 极限天花板档位" },
+          { num: "PDO 5", type: "avs", label: "EPR AVS", text: "15.0V ~ 48.0V (100mV步进)", note: "强制广播：为显卡/CPU提供动态高压" }
+        ]
+      }
+    };
+
+    function selectCharger(watt) {
+      document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const data = chargerData[watt];
+      document.getElementById('chargerTitle').textContent = data.title;
+      document.getElementById('chargerRuleNote').textContent = data.note;
+
+      const container = document.getElementById('pdoListContainer');
+      container.innerHTML = '';
+
+      data.pdos.forEach(pdo => {
+        const item = document.createElement('div');
+        item.className = 'pdo-item';
+        item.innerHTML = `
+          <div>
+            <span class="pdo-num">${pdo.num}</span>
+            <span class="pdo-type pdo-${pdo.type}">${pdo.label}</span>
+            <span class="pdo-desc" style="margin-left: 12px;">${pdo.text}</span>
+          </div>
+          <div class="pdo-notes">${pdo.note}</div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // Initialize with 140W
+    window.addEventListener('DOMContentLoaded', () => {
+      selectCharger(140);
+    });
+  </script>
+</body>
+</html>

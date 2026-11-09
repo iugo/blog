@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USB PD 快充技术全景解析 | PD 3.x · SPR · EPR · AVS · PPS</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/guide.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header>
+    <div class="container nav-bar">
+      <a href="#" class="logo-group">
+        <div class="logo-badge">⚡</div>
+        <div class="logo-text">
+          <h1>USB-PD Tech Guide</h1>
+          <span>Power Delivery 3.x Deep Dive</span>
+        </div>
+      </a>
+      <div class="nav-actions">
+        <!-- 跨页生态切换下拉框 -->
+        <div class="cross-nav-dropdown" id="crossNavDropdown">
+          <button class="cross-nav-trigger" type="button" aria-expanded="false" aria-haspopup="true">
+            <span class="cross-nav-curr">⚡ 总览</span>
+            <span class="cross-nav-arrow">▾</span>
+          </button>
+          <div class="cross-nav-menu">
+            <div class="cross-nav-header">切换生态页面</div>
+            <a href="usb_pd_guide.html" class="cross-nav-item active">
+              <span class="cross-nav-icon">⚡</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">总览指南 (Guide)</span>
+                <span class="cross-nav-desc">PD 3.x · 演进脉络与协议大全</span>
+              </div>
+              <span class="cross-nav-status">✓</span>
+            </a>
+            <a href="charger.html" class="cross-nav-item">
+              <span class="cross-nav-icon">🔌</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">供电端 (Source)</span>
+                <span class="cross-nav-desc">PDO 广播 · 握手状态机 · 消弧保护</span>
+              </div>
+            </a>
+            <a href="cable.html" class="cross-nav-item">
+              <span class="cross-nav-icon">🧵</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">充电线 (Cable)</span>
+                <span class="cross-nav-desc">E-Marker 芯片 · 240W 安全保护机制</span>
+              </div>
+            </a>
+            <a href="device.html" class="cross-nav-item">
+              <span class="cross-nav-icon">📱</span>
+              <div class="cross-nav-info">
+                <span class="cross-nav-title">被充电设备 (Sink)</span>
+                <span class="cross-nav-desc">Request 决策 · 电荷泵直充与回退</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- 视觉分割线 -->
+        <div class="nav-divider" aria-hidden="true"></div>
+
+        <!-- 本页章节锚点直达 -->
+        <ul class="inpage-nav">
+          <li><a href="#core-concepts">核心概念</a></li>
+          <li><a href="#voltage-ladder">电压阶梯</a></li>
+          <li><a href="#spr-vs-epr">SPR/EPR</a></li>
+          <li><a href="#avs-vs-pps">AVS/PPS</a></li>
+          <li><a href="#other-protocols">协议速查</a></li>
+          <li><a href="#simulator">模拟器</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+
+        <button id="themeToggle" class="theme-toggle-btn" title="切换暗色/亮色模式">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-badge">⚡ USB-IF 官方快充标准深度指南</div>
+      <h2>
+        USB PD 快充全景解析<br>
+        <span class="gradient-text">PD 3.x · SPR · EPR · AVS · PPS</span>
+      </h2>
+      <p>
+        从经典的 100W 限制到划时代的 240W 扩展供电体系。全面拆解现代 USB-C 供电中的 Standard Power Range (SPR)、
+        Extended Power Range (EPR)、动态电压调节技术 (AVS & PPS) 以及线缆安全规范。
+      </p>
+    </section>
+
+    <!-- Trio Subpage Navigation Banner -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 10px 0 45px;">
+      <a href="charger.html" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 18px 20px; text-decoration: none; color: inherit; transition: var(--transition); display: flex; align-items: center; gap: 14px;">
+        <div style="font-size: 2rem; line-height: 1;">🔌</div>
+        <div>
+          <div style="font-size: 0.98rem; font-weight: 700; color: var(--accent-blue); margin-bottom: 2px;">充电器 (Source 供电端) 专页 →</div>
+          <div style="font-size: 0.82rem; color: var(--text-muted);">供电能力广播 · 微秒级消弧断电 · 多协议兼容</div>
+        </div>
+      </a>
+      <a href="cable.html" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 18px 20px; text-decoration: none; color: inherit; transition: var(--transition); display: flex; align-items: center; gap: 14px;">
+        <div style="font-size: 2rem; line-height: 1;">🧵</div>
+        <div>
+          <div style="font-size: 0.98rem; font-weight: 700; color: var(--accent-purple); margin-bottom: 2px;">充电线 (Cable 传输介质) 专页 →</div>
+          <div style="font-size: 0.82rem; color: var(--text-muted);">E-Marker 电子标签 · 50V 耐压安全保护</div>
+        </div>
+      </a>
+      <a href="device.html" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 18px 20px; text-decoration: none; color: inherit; transition: var(--transition); display: flex; align-items: center; gap: 14px;">
+        <div style="font-size: 2rem; line-height: 1;">📱</div>
+        <div>
+          <div style="font-size: 0.98rem; font-weight: 700; color: var(--accent-emerald); margin-bottom: 2px;">被充电设备 (Sink 受电端) 专页 →</div>
+          <div style="font-size: 0.82rem; color: var(--text-muted);">功率谈判掌舵者 · 电荷泵直充与动态温控</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Core Concepts Cards -->
+    <section id="core-concepts">
+      <div class="cards-grid">
+        <!-- PD3 Card -->
+        <div class="card" style="--card-accent: #3b82f6;">
+          <div class="card-header">
+            <div class="card-icon">⚡</div>
+            <span class="card-tag">PROTOCOL</span>
+          </div>
+          <h3>USB PD 3.0 / 3.1 / 3.2</h3>
+          <p>当前主流的标准快速充电通信协议，规定了充电头（Source）与用电设备（Sink）之间的供电能力广播与功率协商报文。</p>
+          <div class="card-metrics">
+            <span class="metric-pill">PD 3.0: ≤100W</span>
+            <span class="metric-pill">PD 3.1: ≤240W</span>
+            <span class="metric-pill">BMC双向握手</span>
+          </div>
+        </div>
+
+        <!-- SPR Card -->
+        <div class="card" style="--card-accent: #10b981;">
+          <div class="card-header">
+            <div class="card-icon">🔋</div>
+            <span class="card-tag">POWER RANGE</span>
+          </div>
+          <h3>SPR (标准功率范围)</h3>
+          <p>Standard Power Range。覆盖功率从 0W 到 100W（最大 20V / 5A）。是手机、平板、轻薄本等绝大多数数码设备的通用供电基础。</p>
+          <div class="card-metrics">
+            <span class="metric-pill">5V / 9V / 15V / 20V</span>
+            <span class="metric-pill">Max 100W</span>
+            <span class="metric-pill">PPS 可选</span>
+          </div>
+        </div>
+
+        <!-- EPR Card -->
+        <div class="card" style="--card-accent: #8b5cf6;">
+          <div class="card-header">
+            <div class="card-icon">🚀</div>
+            <span class="card-tag">RANGE EXPANSION</span>
+          </div>
+          <h3>EPR (扩展功率范围)</h3>
+          <p>Extended Power Range。USB PD 3.1 突破性将功率上限由 100W 跃升至 240W（最高 48V / 5A），赋能游戏本、移动工作站与工业级设备。</p>
+          <div class="card-metrics">
+            <span class="metric-pill">28V / 36V / 48V</span>
+            <span class="metric-pill">100W ~ 240W</span>
+            <span class="metric-pill">强制 AVS</span>
+          </div>
+        </div>
+
+        <!-- AVS Card -->
+        <div class="card" style="--card-accent: #f59e0b;">
+          <div class="card-header">
+            <div class="card-icon">🎛️</div>
+            <span class="card-tag">VOLTAGE CONTROL</span>
+          </div>
+          <h3>AVS (可调电压供应)</h3>
+          <p>Adjustable Voltage Supply。PD 3.1 为 EPR 引入的连续电压调控机制（100mV 步进），随后被 PD 3.2 延伸支持到 SPR 领域。</p>
+          <div class="card-metrics">
+            <span class="metric-pill">100mV 步进</span>
+            <span class="metric-pill">15V ~ 48V (EPR)</span>
+            <span class="metric-pill">9V ~ 20V (SPR)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Voltage Ladder Visual -->
+    <section id="voltage-ladder">
+      <div class="voltage-ladder">
+        <div class="ladder-title">
+          <span>⚡ USB PD 电压档位天梯图（从 SPR 走向 EPR）</span>
+          <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: normal;">Max Current: 5A</span>
+        </div>
+        <div class="ladder-container">
+          <!-- 5V -->
+          <div class="ladder-bar">
+            <div class="bar-fill" style="width: 15%; background: linear-gradient(90deg, #10b981, #059669);">5V / 3A (15W)</div>
+            <div class="bar-meta">SPR 标准档 · 兼容所有 USB 设备</div>
+          </div>
+          <!-- 9V -->
+          <div class="ladder-bar">
+            <div class="bar-fill" style="width: 25%; background: linear-gradient(90deg, #10b981, #0d9488);">9V / 3A (27W)</div>
+            <div class="bar-meta">SPR 标准档 · 智能手机 / iPad 黄金档位</div>
+          </div>
+          <!-- 15V -->
+          <div class="ladder-bar">
+            <div class="bar-fill" style="width: 40%; background: linear-gradient(90deg, #0d9488, #0284c7);">15V / 3A (45W)</div>
+            <div class="bar-meta">SPR 标准档 · 平板 / 超极本 / Nintendo Switch</div>
+          </div>
+          <!-- 20V -->
+          <div class="ladder-bar">
+            <div class="bar-fill" style="width: 58%; background: linear-gradient(90deg, #0284c7, #2563eb);">20V / 5A (100W)</div>
+            <div class="bar-meta">SPR 天花板 · 需 5A E-Marker 线缆 · 大部分轻薄笔记本</div>
+          </div>
+          <!-- 28V -->
+          <div class="ladder-bar">
+            <div class="bar-fill" style="width: 72%; background: linear-gradient(90deg, #8b5cf6, #7c3aed);">28V / 5A (140W)</div>
+            <div class="bar-meta">EPR 新增档 · 苹果 MacBook Pro 16" 原装头首发支持</div>
+          </div>
+          <!-- 36V -->
+          <div class="ladder-bar">
+            <div class="bar-fill" style="width: 85%; background: linear-gradient(90deg, #7c3aed, #6366f1);">36V / 5A (180W)</div>
+            <div class="bar-meta">EPR 新增档 · 面向高性能独显本、专业工作站</div>
+          </div>
+          <!-- 48V -->
+          <div class="ladder-bar">
+            <div class="bar-fill" style="width: 100%; background: linear-gradient(90deg, #ec4899, #f43f5e);">48V / 5A (240W)</div>
+            <div class="bar-meta">EPR 极限档位 · USB Type-C 物理供电极限天花板</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SPR vs EPR In-Depth Section -->
+    <section id="spr-vs-epr">
+      <h3 class="section-title">🔌 SPR 与 EPR：功率体系的分水岭</h3>
+      <p class="section-subtitle">
+        USB-IF 在 USB PD 3.1 规范中正式确立了双规供电体系。为什么在 100W 之后不继续加大电流，而是选择提升电压？
+      </p>
+
+      <div class="two-col" style="margin-bottom: 30px;">
+        <div class="detail-card">
+          <h4>🔋 SPR (标准功率范围 ≤100W)</h4>
+          <ul>
+            <li><strong>电压范围：</strong>5V、9V、15V、20V 固定四档。</li>
+            <li><strong>最大电流：</strong>标准线缆 3A（最高 60W），配备 E-Marker 芯片线缆可达 5A（最高 100W）。</li>
+            <li><strong>动态调压：</strong>支持 <strong>PPS (Programmable Power Supply)</strong>，典型工作在 3.3V ~ 21V，步进 20mV / 50mA，广泛应用于手机电荷泵大功率直充。</li>
+            <li><strong>生态定位：</strong>覆盖 90% 以上日常消费电子（手机、平板、TWS耳机、轻薄办公笔记本）。</li>
+          </ul>
+        </div>
+
+        <div class="detail-card">
+          <h4>🚀 EPR (扩展功率范围 100W ~ 240W)</h4>
+          <ul>
+            <li><strong>电压范围：</strong>新增 28V（>100W）、36V（>140W）、48V（>180W）三个固定电压档。</li>
+            <li><strong>物理安全考量：</strong>若继续增加电流（例如 10A），线缆发热 $P = I^2R$ 会呈平方级暴增，铜芯加粗导致线缆笨重硬化。因此业界选择将电压提升至 48V，电流保持在安全可控的 5A。</li>
+            <li><strong>动态调压：</strong>强制要求支持 <strong>AVS (Adjustable Voltage Supply)</strong>，步进 100mV。</li>
+            <li><strong>硬件强制防护：</strong>48V 高压热插拔极易产生电弧（拉弧烧毁针脚），规范强制要求具备消弧电路与 EPR 认证线缆。</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Feature Comparison Table -->
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>对比维度</th>
+              <th>SPR (Standard Power Range)</th>
+              <th>EPR (Extended Power Range)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>规范引入版本</strong></td>
+              <td>USB PD 2.0 / 3.0 / 3.1</td>
+              <td>USB PD 3.1 (2021年发布)</td>
+            </tr>
+            <tr>
+              <td><strong>最大供电功率</strong></td>
+              <td>100W (20V @ 5A)</td>
+              <td>240W (48V @ 5A)</td>
+            </tr>
+            <tr>
+              <td><strong>固定电压档位 (Fixed PDO)</strong></td>
+              <td>5V, 9V, 15V, 20V</td>
+              <td>28V (140W), 36V (180W), 48V (240W)</td>
+            </tr>
+            <tr>
+              <td><strong>动态电压微调技术</strong></td>
+              <td>PPS (3.3V-21V, 20mV步进) / SPR AVS (9V-20V)</td>
+              <td>EPR AVS (15V-48V, 100mV步进，强制要求)</td>
+            </tr>
+            <tr>
+              <td><strong>线缆要求</strong></td>
+              <td>普通 3A 线缆 (≤60W)；若为 5A 线，USB-IF 现行标准已统一升级为 240W EPR 规范（旧 100W 5A 认证已废止）</td>
+              <td>专属 EPR 认证线缆（耐压 50V，抗电弧设计，含 EPR 芯片标识）</td>
+            </tr>
+            <tr>
+              <td><strong>典型应用设备</strong></td>
+              <td>手机、iPad、超极本、Switch、微单相机</td>
+              <td>游戏笔记本、专业移动工作站、4K/5K大屏显示器、电动工具、工控主板</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- AVS vs PPS In-Depth Section -->
+    <section id="avs-vs-pps">
+      <h3 class="section-title">🎛️ AVS 与 PPS：两代连续调压技术大比拼</h3>
+      <p class="section-subtitle">
+        在传统 PD 3.0 时代，手机快充主要依赖 PPS；为什么进入 PD 3.1 EPR 时代后，USB-IF 转向了 AVS？核心分水岭正是<strong>功率上限的本质鸿沟（PPS 功率天然受限）与供电架构的分工演进</strong>。
+      </p>
+
+      <!-- Key Power Limitation Contrast Box -->
+      <div class="power-contrast-box">
+        <div class="power-contrast-header">
+          <span class="power-header-icon">⚠️</span>
+          <div>
+            <h4 style="font-size: 1.18rem; font-weight: 800; color: var(--text-primary);">关键核心区别：PPS 功率天然受限（仅限 ≤100W SPR），AVS 专为 240W 高功率而生</h4>
+            <p style="font-size: 0.92rem; color: var(--text-secondary); margin-top: 5px; line-height: 1.6;">
+              很多人以为 PPS 和 AVS 只是 20mV 与 100mV 步进精度的不同，其实<strong>最根本的瓶颈在于功率容量与控制哲学</strong>：
+              PPS 被 USB-IF 严格锁死在 100W 传统的 SPR 框架内，绝无法跨入 100W~240W 时代；而 AVS 则是解锁 240W 极致功率的基石。
+            </p>
+          </div>
+        </div>
+        <div class="power-columns">
+          <div class="power-col power-col-pps">
+            <div class="power-col-title">
+              <span class="power-badge-limit">功率受限</span>
+              <strong>PPS 局限性与功率瓶颈</strong>
+            </div>
+            <ul>
+              <li><strong>协议天花板（绝无可能 >100W）：</strong>USB-IF 官方规范明文规定，PPS 仅存在于 SPR（≤100W）体系中。<strong>EPR (100W~240W) 明确禁用了 PPS</strong>！</li>
+              <li><strong>实际功率更低（普遍 ≤45W~65W）：</strong>虽然理论支持 20V/5A (100W)，但市售手机与充头为了控温，主流 PPS 仅做到 <strong>33W / 45W / 65W</strong>，极少能跑满 100W。</li>
+              <li><strong>低压大电流发热限制：</strong>PPS 主打 3.3V~11V 或 3.3V~16V 手机直充，依靠拉大电流堆功率，导致线缆接头阻抗发热极高（$P=I^2R$），无法用于大功率电脑。</li>
+              <li><strong>保姆式 CC 恒流包袱：</strong>充电器充当手机电芯的恒流 (CC) 保护源，每 10 秒强制心跳握手，系统重载或通信干扰时极易闪断重连。</li>
+            </ul>
+          </div>
+
+          <div class="power-col power-col-avs">
+            <div class="power-col-title">
+              <span class="power-badge-full">大功率统治级</span>
+              <strong>AVS 高功率统治优势</strong>
+            </div>
+            <ul>
+              <li><strong>直达 240W 极致天花板：</strong>生于 EPR 扩展功率时代，电压跨越 <strong>15V 直达 48V</strong>，以 5A 安全电流稳定输出 <strong>240W</strong> 澎湃能量！</li>
+              <li><strong>全功率段大一统（PD 3.2）：</strong>不仅统治 100W~240W 高压，新规范更将 SPR AVS 延伸至 <strong>9V~20V</strong>，彻底取代传统低效的 PPS。</li>
+              <li><strong>高压低损耗架构：</strong>通过提升电压至 28V/36V/48V，同等线径下以极低发热输送充沛电力，契合高性能游戏本与工作站。</li>
+              <li><strong>纯恒压 (CV) 高效分工：</strong>充电器化身纯净高压母线，受电端（电脑/显卡）由机内成熟的多相 Buck 供电电路自主调配，稳定性极佳。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-bottom: 30px;">
+        <div class="detail-card">
+          <h4>📱 PPS (Programmable Power Supply) 细分机制</h4>
+          <ul>
+            <li><strong>设计初衷：</strong>专门为了解决智能手机内部单节/双节锂电池充电的发热痛点，配合电荷泵（Charge Pump）做 2:1 或 4:1 直充。</li>
+            <li><strong>超细颗粒度：</strong>电压步进 <strong>20mV (0.02V)</strong>，电流步进 <strong>50mA</strong>。</li>
+            <li><strong>恒流/恒压控制：</strong>具备 Current Foldback（电流折返）保护机制，充电器深度参与电池端动态限流。</li>
+            <li><strong>为什么不能做大功率：</strong>超细调压在高电压大电流下会引发严重的控制环路震荡与温升，且笔记本主板不需要这种微粒度调压。</li>
+          </ul>
+        </div>
+
+        <div class="detail-card">
+          <h4>💻 AVS (Adjustable Voltage Supply) 机制优势</h4>
+          <ul>
+            <li><strong>设计初衷：</strong>服务于 140W~240W 的高功率系统（游戏本、大功率显示器、桌面工作站、电动工具）。</li>
+            <li><strong>黄金步进精度：</strong>步进为 <strong>100mV (0.1V)</strong>，在高电压下既能满足精准稳压，又减少了 80% 的报文心跳开销。</li>
+            <li><strong>纯恒压 (CV) 模式：</strong>充电头无需关心电池复杂状态，专心输出高品质恒压源，故障率极大降低。</li>
+            <li><strong>大一统生态：</strong>在 PD 3.2 中，USB-IF 已将 AVS 引入 SPR（9V~20V），未来设备无需再单独兼容复杂的 PPS。</li>
+            <li><strong>手机消费级标杆：</strong>以 <strong>iPhone 18 Pro / 17 Pro 系列</strong> 为代表的新一代旗舰手机率先拥抱 <strong>USB-PD AVS (15V~20V 微步进)</strong>，实现 <strong>60W 峰值 / 40W 持续快充</strong>（15 分钟充至 50%），标志着 AVS 从 PC 笔记本全面下沉至消费类掌上终端，彻底告别旧时代 27W 固定电压瓶颈。</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- PPS vs AVS Comparison Table -->
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>核心特性</th>
+              <th>PPS (可编程电源) — 功率受限</th>
+              <th>AVS (可调电压电源) — 大功率标准</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>最大理论功率</strong></td>
+              <td><span class="badge-cross">≤ 100W</span> (硬性限制在 SPR 范围)</td>
+              <td><span class="badge-check">最高 240W</span> (直达 EPR 48V/5A 极限)</td>
+            </tr>
+            <tr>
+              <td><strong>市售实际主流功率</strong></td>
+              <td><strong>33W / 45W / 65W</strong> (极少真正做到 100W)</td>
+              <td><strong>100W ~ 140W ~ 240W</strong></td>
+            </tr>
+            <tr>
+              <td><strong>EPR (>100W) 认证要求</strong></td>
+              <td><span class="badge-cross">❌ 规范严格禁止</span>，EPR 体系完全不支持 PPS</td>
+              <td><span class="badge-check">✔️ 充电器 (Source) 强制要求</span>（设备端 Sink 可选）</td>
+            </tr>
+            <tr>
+              <td><strong>SPR (≤100W) 认证要求</strong></td>
+              <td>全程可选（Optional），主流集中在手机充电头</td>
+              <td><strong>PD 3.2 规定：</strong>充电器功率 &gt; 27W <strong>强制要求</strong>；≤ 27W 及 Sink 可选</td>
+            </tr>
+            <tr>
+              <td><strong>电压覆盖范围</strong></td>
+              <td>3.3V ~ 21V (主流多在 3.3V~11V 或 3.3V~16V)</td>
+              <td>EPR: 15V~28V / 15V~36V / 15V~48V；SPR: 9V~20V</td>
+            </tr>
+            <tr>
+              <td><strong>电压步进精度</strong></td>
+              <td>20 mV (0.02V) 微调步进</td>
+              <td>100 mV (0.1V) 工业级稳健步进</td>
+            </tr>
+            <tr>
+              <td><strong>电流与供电控制模式</strong></td>
+              <td>恒压 (CV) + 恒流 (CC) 限制，需电流折返保护</td>
+              <td>纯恒压 (CV) 模式，由受电端设备自主高效降压</td>
+            </tr>
+            <tr>
+              <td><strong>协议保活心跳</strong></td>
+              <td>极其严格，10 秒内未收到重协商自动断电复位</td>
+              <td>宽容稳健，抗丢包能力强，适合长周期重载运行</td>
+            </tr>
+            <tr>
+              <td><strong>典型应用与受众</strong></td>
+              <td>传统智能手机、小功率数码配件 (电荷泵方案)</td>
+              <td><strong>新一代旗舰手机（如 iPhone 18 Pro/17 Pro 60W AVS）</strong>、独显游戏本、高性能工作站、4K/8K显示器、工控设备</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Other Fast Charging Protocols & Ecosystem Section (Table First) -->
+    <section id="other-protocols">
+      <h3 class="section-title">⚡ 其他常见充电协议全景（含无线快充生态）</h3>
+      <p class="section-subtitle">
+        在 USB-PD 统一全球有线大功率标准的同时，业界还并存着中国统一主导的 UFCS 国家融合标准、主流手机品牌私有快充、高通 QC / 三星 SFC 等芯片平台协议，以及以 WPC Qi、Qi2 MPP、苹果 MagSafe、私有大功率风冷为代表的无线充电生态。以下全景横向梳理其技术规格、物理通信介质与兼容回退机制。
+      </p>
+
+      <!-- 1. COMPREHENSIVE PROTOCOLS TABLE (TABLE FIRST) -->
+      <div class="table-wrapper" style="margin-bottom: 36px;">
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width: 170px;">协议名称 / 体系</th>
+              <th style="min-width: 90px;">介质类型</th>
+              <th style="min-width: 130px;">主导机构 / 生态代表</th>
+              <th style="min-width: 160px;">物理通信通道与握手方式</th>
+              <th style="min-width: 120px;">典型 / 峰值功率</th>
+              <th style="min-width: 150px;">调压机制与控制颗粒度</th>
+              <th style="min-width: 180px;">机内受电架构与核心原理</th>
+              <th style="min-width: 170px;">兼容定位与回退梯队</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Group 1: Wired Standards -->
+            <tr class="table-group-header">
+              <td colspan="8">🔌 一、有线法定公有与行业公认标准 (Wired Public & De Facto Standards)</td>
+            </tr>
+            <tr>
+              <td><strong>USB PD 3.1 / 3.2</strong><br><small style="color:var(--text-muted);">SPR / EPR / Fixed / AVS</small><br><span class="year-badge">📅 2021/2023 发布 · 2021/2025 商用</span></td>
+              <td><span class="medium-tag medium-tag-wired">Type-C 有线</span></td>
+              <td>USB-IF 国际行业协会</td>
+              <td>Type-C <strong>CC 针脚</strong><br>(BMC 双相标记编码)</td>
+              <td><span class="badge-check">100W ~ 240W</span><br><small>(SPR: 100W / EPR: 240W)</small></td>
+              <td>Fixed 固定档 (5/9/15/20/28/36/48V)<br>或 <strong>AVS 100mV</strong> 工业级步进</td>
+              <td>笔电/平板多相高效 Buck 降压；<br>手机配合电荷泵高效直充</td>
+              <td><strong>全球跨行业大一统基石</strong>，国际标准全设备向下兼容</td>
+            </tr>
+            <tr>
+              <td><strong>USB PD 3.0 PPS</strong><br><small style="color:var(--text-muted);">可编程电源供应</small><br><span class="year-badge">📅 2017 发布 · 2019 规模商用</span></td>
+              <td><span class="medium-tag medium-tag-wired">Type-C 有线</span></td>
+              <td>USB-IF 国际行业协会</td>
+              <td>Type-C <strong>CC 针脚</strong><br>(BMC 双相标记编码)</td>
+              <td><strong>≤100W</strong><br><small>(手机多在 25W~65W)</small></td>
+              <td><strong>3.3V ~ 21V (20mV 微调)</strong><br>+ 恒流 (CC) 限制折返</td>
+              <td>机内 2:1 / 4:1 电荷泵直充，<br>发热源外移至充电头</td>
+              <td>三星 SFC、Google Pixel 及国内旗舰普遍支持；缺失时回退 Fixed 档</td>
+            </tr>
+            <tr>
+              <td><strong>UFCS 融合快充</strong><br><small style="color:var(--text-muted);">通用快速充电规范</small><br><span class="year-badge">📅 2021底 发布 · 2022/2023 商用</span></td>
+              <td><span class="medium-tag medium-tag-wired">Type-C / A 双模</span></td>
+              <td>中国信通院 / TAF / FCA<br><small>(华为/小米/OPPO/vivo等)</small></td>
+              <td><strong>CC 针脚</strong> 或 <strong>D+/D-</strong><br>双模半双工数字报文</td>
+              <td><strong>33W ~ 44W ~ 65W ~ 88W+</strong><br><small>(演进规划 100W+)</small></td>
+              <td><strong>3.4V ~ 36V 分段连续调压</strong><br>(10mV / 20mV / 100mV 步进)</td>
+              <td>电荷泵直充 / 串联双电芯直充，<br>高精度温度/阻抗闭环感知</td>
+              <td><strong>中国国家跨品牌统一行业标准</strong>，联盟内所有手机充头通用互通</td>
+            </tr>
+            <tr>
+              <td><strong>高通 Quick Charge</strong><br><small style="color:var(--text-muted);">QC 2.0 / 3.0 / 4+ / 5</small><br><span class="year-badge">📅 2013~2020 发布 · 2014~2020 商用</span></td>
+              <td><span class="medium-tag medium-tag-wired">Type-C / A 有线</span></td>
+              <td>高通公司 (Qualcomm)<br><small style="color:var(--accent-amber);">行业事实公认 (De Facto)</small></td>
+              <td>QC2/3: <strong>D+/D-</strong> 模拟电平跳变<br>QC4+/5: 兼容 <strong>CC 针脚</strong></td>
+              <td>18W (QC3.0) ~ <strong>100W+ (QC5)</strong></td>
+              <td>QC2: 5/9/12/20V 固定档<br>QC3: INOV 200mV 步进<br>QC5: 依托 PPS 20mV 调压</td>
+              <td>早期高压 Buck 降压；<br>QC5 转型为双电芯串联 + 电荷泵</td>
+              <td>骁龙移动平台生态标配；<br>QC4+/QC5 与 USB-PD PPS 完全互通</td>
+            </tr>
+            <tr>
+              <td><strong>USB BC 1.2</strong><br><small style="color:var(--text-muted);">DCP / CDP / SDP</small><br><span class="year-badge">📅 2010 发布 · 2011 规模商用</span></td>
+              <td><span class="medium-tag medium-tag-wired">通用 USB 有线</span></td>
+              <td>USB-IF 国际行业协会</td>
+              <td><strong>D+ 与 D- 物理短接</strong><br>或内部电阻网络识别</td>
+              <td><strong>0.5W ~ 7.5W</strong><br><small>(5V / 0.1A ~ 1.5A · 规范法定上限)</small></td>
+              <td><strong>5.0V 恒定电压</strong><br>(无任何动态升压)</td>
+              <td>线性稳压 LDO 或简单低压 Buck，<br>无高压损坏风险</td>
+              <td><strong>全球所有 USB 供电设备终极安全底线</strong>：规范定义了 SDP (0.5A/0.9A)、CDP (1.5A 边传边充) 与 DCP (纯充头 0.5A~1.5A)。支持 VBUS 压降动态自适应回退（最低 0.5A 甚至 100mA），绝不拉垮老旧低功率供电端。<br><small style="color:var(--text-muted);">注：业内俗称的“5V/2A 10W 标配”属于厂商私有非标扩充，BC 1.2 官方标准法定上限严格为 1.5A (7.5W)。</small></td>
+            </tr>
+            <tr>
+              <td><strong>Apple 2.4A</strong><br><small style="color:var(--text-muted);">经典电阻分压事实标准</small><br><span class="year-badge">📅 2012 发布 · 2012 商用</span></td>
+              <td><span class="medium-tag medium-tag-wired">USB-A 有线</span></td>
+              <td>苹果公司 (Apple 早期)<br><small style="color:var(--accent-amber);">行业事实公认 (De Facto)</small></td>
+              <td><strong>D+/D- 施加固定偏置分压</strong><br>(D+=2.7V, D-=2.7V)</td>
+              <td><strong>12W</strong><br><small>(5V / 2.4A)</small></td>
+              <td><strong>5.0V 恒定电压</strong></td>
+              <td>传统机内电源芯片线性降压</td>
+              <td><strong>事实行业公认标准</strong>：血统上属苹果单方私有，但因<strong>无需芯片加密且仅依贴片分压电阻</strong>，被全球第三方充头/充电宝芯片默认硬件集成；无识别降为 5V/1A</td>
+            </tr>
+
+            <!-- Group 2: Proprietary Wired Ecosystems -->
+            <tr class="table-group-header">
+              <td colspan="8">⚡ 二、有线品牌私有快充体系 (Wired Proprietary Ecosystems)</td>
+            </tr>
+            <tr>
+              <td><strong>小米澎湃秒充</strong><br><small style="color:var(--text-muted);">Mi Turbo Charge</small><br><span class="year-badge">📅 2020 发布(120W) · 2020/2022 商用</span></td>
+              <td><span class="medium-tag medium-tag-wired">Type-C / A 有线</span></td>
+              <td>小米科技 (Xiaomi / Redmi)</td>
+              <td>Type-C CC 或 <strong>USB-A 魔改第5针</strong><br>+ 私有硬件加密芯片</td>
+              <td><strong>67W ~ 90W ~ 120W ~ 210W</strong></td>
+              <td>澎湃 P1/P2/P3 专用动态调压<br><small>(如 11V/6.1A、20V/6A、20V/10.5A)</small></td>
+              <td>自研澎湃快充芯片 + 4:1 / 2:1<br><strong>单电芯百瓦高压直充</strong></td>
+              <td>原装生态跑满峰值；<strong>对公开 PD/PPS 极度友好</strong>(旗舰支持45W~65W)，支持UFCS</td>
+            </tr>
+            <tr>
+              <td><strong>OPPO SuperVOOC</strong><br><small style="color:var(--text-muted);">超级闪充 (欧加体系)</small><br><span class="year-badge">📅 2014(VOOC)/2018(Super) · 2014~2023 商用</span></td>
+              <td><span class="medium-tag medium-tag-wired">Type-C / A 有线</span></td>
+              <td>欧加集团<br><small>(OPPO / 一加 / realme)</small></td>
+              <td>Type-C CC 或 <strong>USB-A 7-Pin 触片</strong><br>+ 双向加密芯片</td>
+              <td><strong>65W ~ 80W ~ 100W ~ 240W</strong><br><small>(240W 为全球量产巅峰记录)</small></td>
+              <td>全链路 VFC 极速算法<br><small>(如 10V/6.5A、11V/7.3A、24V/10A)</small></td>
+              <td><strong>串联双电芯 (2S) 直充体系</strong>，<br>机内无 DC-DC 转换，两电芯均分高压</td>
+              <td>原装生态跑满峰值；普通第三方 PD 头回退 18W/27W，新机全系标配 UFCS 33W~44W</td>
+            </tr>
+            <tr>
+              <td><strong>华为超级快充</strong><br><small style="color:var(--text-muted);">SuperCharge SCP / FCP</small><br><span class="year-badge">📅 2015(FCP)/2016(SCP) · 2015~2020 商用</span></td>
+              <td><span class="medium-tag medium-tag-wired">Type-C / A 有线</span></td>
+              <td>华为技术 (Huawei) / 荣耀</td>
+              <td>Type-C CC 针脚或 D+/D- 脉冲<br>+ 线缆阻抗动态探测</td>
+              <td><strong>22.5W ~ 40W ~ 66W ~ 88W ~ 100W</strong></td>
+              <td>私有毫伏级动态步进微调<br><small>(如 4.5V/5A、10V/4A、11V/6A、20V/4.4A)</small></td>
+              <td>多级并联电荷泵直充，<br>机身温度/电池内阻实时闭环反馈</td>
+              <td>原装生态跑满峰值；第三方 PD 头多回退 18W/27W，<strong>UFCS 核心推动者 (支持40W~66W)</strong></td>
+            </tr>
+            <tr>
+              <td><strong>vivo 超快闪充</strong><br><small style="color:var(--text-muted);">FlashCharge (vivo / iQOO)</small><br><span class="year-badge">📅 2015/2020(120W) · 2016~2022 商用</span></td>
+              <td><span class="medium-tag medium-tag-wired">Type-C / A 有线</span></td>
+              <td>vivo / iQOO</td>
+              <td>Type-C CC 或专用触点加密握手<br>+ 专用超低阻线材</td>
+              <td><strong>44W ~ 80W ~ 120W ~ 200W</strong><br><small>(全球首发 10C 极片超级快充)</small></td>
+              <td>私有阵列调压控制<br><small>(如 11V/4A、11V/7.3A、20V/6A、20V/10A)</small></td>
+              <td><strong>三路电荷泵分流并联架构</strong><br>+ 副板隔离散热 + 10C 高倍率电芯</td>
+              <td>原装生态跑满峰值；部分旗舰开放 45W~65W PPS 兼容，全系标配通过 UFCS 44W 认证</td>
+            </tr>
+            <tr>
+              <td><strong>三星超加速充电</strong><br><small style="color:var(--text-muted);">SFC 1.0 (25W) / SFC 2.0 (45W)</small><br><span class="year-badge">📅 2014(AFC)/2019(SFC) · 2014~2026 商用</span></td>
+              <td><span class="medium-tag medium-tag-wired">Type-C 有线</span></td>
+              <td>三星电子 (Samsung)</td>
+              <td>Type-C <strong>CC 针脚</strong><br>(严格基于 USB-PD PPS 握手)</td>
+              <td><strong>25W / 45W</strong><br><small>(早期 AFC 为 15W 9V/1.67A)</small></td>
+              <td>依托 PPS 3.3V~11V 连续调压<br><small>(25W: 9V/2.77A; 45W: 10V/4.5A 或 11V/4.05A)</small></td>
+              <td>机内电荷泵与低压降直充，<br>完全拥抱 USB-PD PPS 公开标准</td>
+              <td><strong>极度开放</strong>，只要第三方 PD 充电器支持对应电流的 PPS 档位即可完美触发 25W/45W</td>
+            </tr>
+
+            <!-- Group 3: Wireless Ecosystems -->
+            <tr class="table-group-header">
+              <td colspan="8">📶 三、无线充电与磁吸快充生态 (Wireless Charging & Magnetic Ecosystems)</td>
+            </tr>
+            <tr>
+              <td><strong>WPC Qi 1.2 / 1.3</strong><br><small style="color:var(--text-muted);">全球基础通用无线电磁感应</small><br><span class="year-badge">📅 2010(Qi1.0)/2015(Qi1.2) · 2012/2017 商用</span></td>
+              <td><span class="medium-tag medium-tag-wireless">无线感应</span></td>
+              <td>无线充电联盟 (WPC)</td>
+              <td>线圈载波通信：<br><strong>ASK 幅移键控</strong> (Rx→Tx 控制数据)<br><strong>FSK 频移键控</strong> (Tx→Rx 配置同步)</td>
+              <td><strong>5W ~ 15W</strong><br><small>(BPP 基础档 5W / EPP 扩展档 10~15W)</small></td>
+              <td>发射端 5V/9V/12V 交流激励，<br>频率调节 (110kHz~205kHz) 控制能量</td>
+              <td>发射/接收线圈近场电磁耦合，<br>接收端全桥同步整流为直流电</td>
+              <td><strong>全球无线充电通用安全基准</strong>；对对准度敏感，偏心时效率跌至 60% 以下且剧烈发热</td>
+            </tr>
+            <tr>
+              <td><strong>Apple MagSafe</strong><br><small style="color:var(--text-muted);">苹果磁吸无线快充</small><br><span class="year-badge">📅 2020 发布 · 2020(15W)/2024(25W) 商用</span></td>
+              <td><span class="medium-tag medium-tag-wireless">无线磁吸</span></td>
+              <td>苹果公司 (Apple)</td>
+              <td>线圈高频载波通信 +<br><strong>360° 环形钕铁硼磁体物理吸附</strong><br>+ 内部 NFC 身份双向识别握手</td>
+              <td><strong>15W / 25W</strong><br><small>(iPhone 12~15: 15W; iPhone 16/17/18 Pro 搭配 30W/35W+ 适配器: 25W)</small></td>
+              <td>9V/2.22A 或 15V/2A 交流驱动调制，<br>自适应变频调节功率</td>
+              <td>磁环自吸附对齐（中心偏差 &lt;1mm），<br><strong>彻底消除偏心磁通发散与额外涡流损耗</strong></td>
+              <td>原装或 MFi 认证配件跑满 15W~25W 并激活弹窗；未认证普通第三方磁吸底座回退至 <strong>7.5W Qi</strong></td>
+            </tr>
+            <tr>
+              <td><strong>WPC Qi2 (MPP)</strong><br><small style="color:var(--text-muted);">新一代磁功率分布开放国际标准</small><br><span class="year-badge">📅 2023 发布 · 2023底/2024 商用</span></td>
+              <td><span class="medium-tag medium-tag-wireless">无线磁吸</span></td>
+              <td>无线充电联盟 (WPC)<br><small>(基于 Apple MagSafe 贡献建立)</small></td>
+              <td><strong>MPP 磁对齐环规范</strong> +<br>增强型线圈载波通信 (加强 FOD 异物检测)</td>
+              <td><strong>15W ~ 25W</strong><br><small>(Qi2.0 为 15W，Qi2.1/2.2 规范演进至 25W)</small></td>
+              <td>规范化交流频率自适应微调，<br>毫秒级动态功率闭环调节</td>
+              <td>开放式磁吸标准，跨设备同心度极致锁定，<br>线圈热损耗降至与有线同等水平</td>
+              <td><strong>打破苹果与安卓的磁吸生态壁垒</strong>！iPhone 13~18 系列已全面支持 Qi2 15W~25W；非 Qi2 设备回退 5W BPP</td>
+            </tr>
+            <tr>
+              <td><strong>品牌私有风冷无线秒充</strong><br><small style="color:var(--text-muted);">小米 / 华为 / OPPO 澎湃/超级无线</small><br><span class="year-badge">📅 2019(30W)/2021(80W) · 2019/2024(80W解禁) 商用</span></td>
+              <td><span class="medium-tag medium-tag-wireless">无线风冷</span></td>
+              <td>小米 (澎湃80W) / 华为 (超级80W)<br>OPPO (AirVOOC 50W)</td>
+              <td>定制发射大线圈 + 私有高频加密协议<br>+ 底座温度/风扇转速闭环联动</td>
+              <td><span class="badge-check">50W ~ 80W</span><br><small>(严格符合 2024 工信部 80W 法规上限)</small></td>
+              <td><strong>20V/2.5A (50W) ~ 20V/4A (80W)</strong><br>高频高压电磁谐振传输</td>
+              <td>发射座内置<strong>涡轮离心风扇主动抽风吹背板</strong>；<br>手机端搭载多级电荷泵无线高压受电 IC</td>
+              <td>原装风冷底座跑满 50W~80W 极限峰值；脱离原装底座一律安全回退为 <strong>5W~15W 标准 Qi 协议</strong></td>
+            </tr>
+            <tr>
+              <td><strong>反向无线充电</strong><br><small style="color:var(--text-muted);">Reverse Wireless Charging</small><br><span class="year-badge">📅 2018 发布 · 2018 商用</span></td>
+              <td><span class="medium-tag medium-tag-wireless">无线感应</span></td>
+              <td>华为、三星、小米、Google 等<br><small>旗舰智能手机</small></td>
+              <td>遵循 <strong>WPC Qi BPP 基础规范</strong><br>(手机端解调对端耳机的 ASK 功率包)</td>
+              <td><strong>5W ~ 10W</strong><br><small>(通常维持在 5V/1A 应急供电)</small></td>
+              <td>手机内置升压 DC-DC 产生 5V/9V，<br>驱动逆变全桥生成交变磁场</td>
+              <td><strong>机内硬件拓扑反转</strong>：接收端同步整流桥<br>切换为高频逆变全桥驱动内置天线</td>
+              <td>电量低于 20%~25% 时系统强行关闭保护自身；为无线耳机、智能手表等随身配件应急补电</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- PART 1: WIRED FAST CHARGING EVOLUTION & MECHANISMS -->
+      <!-- ============================================== -->
+      <div style="border-top: 2px dashed var(--border-color); padding-top: 30px; margin-bottom: 35px;">
+        <h4 style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 10px;">
+          <span>🔌 第一部分：有线快充技术演进与核心机制拆解</span>
+        </h4>
+        <p style="font-size: 0.92rem; color: var(--text-secondary); margin-bottom: 22px;">
+          深入解析为什么各大手机厂商在标准 USB-PD 之外自研私有直充、串联双电芯与电荷泵技术，以及中国国家级大一统标准 UFCS 的破壁架构。
+        </p>
+
+        <!-- Why Proprietary Protocols Section -->
+        <div class="tech-callout-box">
+          <h5 style="font-size: 1.12rem; font-weight: 800; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+            <span>💡 历史时代分歧：厂商为何自研私有协议？为何当年能大幅领先 USB-IF？</span>
+          </h5>
+          <p style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 18px;">
+            在 2014~2020 年间，USB-PD 标准演进相对保守（长期局限于 5V/9V/15V/20V 固定档与最大 5A 电流）。
+            手机厂商面对激烈的续航与补能竞争，率先攻克了锂电池充电的核心发热痛点与电流瓶颈，走出了一条完全不同的技术路径：
+          </p>
+          <div class="grid-3" style="margin-top: 14px;">
+            <div class="callout-subcard">
+              <div style="font-weight: 700; color: var(--accent-rose); margin-bottom: 6px; font-size: 0.95rem;">
+                🌡️ 发热转移革命（低压大电流直充）
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+                传统 USB-PD 9V 进手机，单电芯电池（4.2V）需要机内 DC-DC Buck 降压，转换效率仅 80%~85%，2W~3W 废热全留在机身内部，手机滚烫降频。厂商自研低压大电流直充（如 VOOC 5V/4A、SCP 4.5V/5A），把发热源<strong>直接移出手机转移到充电器端</strong>，手机端实现近乎直通，温升大幅降低。
+              </p>
+            </div>
+            <div class="callout-subcard">
+              <div style="font-weight: 700; color: var(--accent-emerald); margin-bottom: 6px; font-size: 0.95rem;">
+                ⚡ 电流与拓扑突破（串联双电芯 + 电荷泵）
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+                USB-IF 规范长期卡在 5A 上限，而厂商通过自研高导电端子将电流拉到 6A~10A。随后更发明<strong>串联双电芯 (2S) 架构</strong>与<strong>4:2 / 2:1 电荷泵（Charge Pump，转换效率高达 98%）</strong>，在 2020 年就实现了 120W（20V/6A）量产商用，2022 年达到 240W（24V/10A），远超当时 USB-PD 100W 极限。
+              </p>
+            </div>
+            <div class="callout-subcard">
+              <div style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px; font-size: 0.95rem;">
+                🏰 配件安全与商业生态护城河
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+                百瓦级大功率快充一旦使用劣质山寨线缆，极易引发起火事故。厂商在充电头、魔改线缆与手机三端均植入<strong>私有硬件加密握手芯片</strong>，必须三重身份校验一致才解锁超百瓦闪充。这既杜绝了安全隐患，也客观上形成了原装配件的高价值生态护城河。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Four Major Brand Families Cards -->
+        <h5 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+          <span>🏢 主流品牌四大私有快充技术档案</span>
+        </h5>
+        <div class="brand-grid">
+          <!-- Huawei / Honor -->
+          <div class="brand-card brand-huawei">
+            <div class="brand-header">
+              <span class="brand-name">华为 / 荣耀 (Huawei / Honor)</span>
+              <span class="brand-tag tag-hw">SCP / FCP / Turbo</span>
+            </div>
+            <div class="brand-details">
+              <p><strong>协议演进梯队：</strong>早期高压 FCP (9V/2A 18W) → SCP 1.0 (4.5V/5A 22.5W) → SCP 2.0 (10V/4A 40W) → 11V/6A (66W) → SuperCharge Turbo (20V/4.4A 88W, 20V/5A 100W) → 笔电 135W/140W。</p>
+              <p style="margin-top: 8px;"><strong>硬件与通信：</strong>早先基于 D+/D- 模拟跳变握手，现已全面过渡为 Type-C CC 脚双向数字加密通信。配合机内电荷泵与高导线材。</p>
+              <p style="margin-top: 8px;"><strong>PD 兼容策略：</strong>对第三方 PD 充头较保守，大多握手标准 9V/2A (18W) 或 9V/3A (27W) Fixed 档；但作为核心主导方<strong>全系深度支持 UFCS 融合快充（40W~66W）</strong>。</p>
+            </div>
+          </div>
+
+          <!-- Xiaomi / Redmi -->
+          <div class="brand-card brand-xiaomi">
+            <div class="brand-header">
+              <span class="brand-name">小米 / Redmi (Xiaomi)</span>
+              <span class="brand-tag tag-mi">Mi Turbo Charge 澎湃秒充</span>
+            </div>
+            <div class="brand-details">
+              <p><strong>协议演进梯队：</strong>QC 27W → 33W (11V/3A) → 67W (11V/6.1A) → 90W (20V/4.5A) → 120W (20V/6A) → 210W / 300W 概念秒充。</p>
+              <p style="margin-top: 8px;"><strong>核心自研芯片：</strong>机内搭载<strong>自研澎湃 P1 / P2 / P3 快充芯片</strong>（支持 4:1 转换与单电芯百瓦直充）及澎湃 G1 电池管理芯片，实现极高充电效率。</p>
+              <p style="margin-top: 8px;"><strong>PD 兼容策略：</strong><strong>对标准 PD/PPS 极为友好的品牌</strong>！多款旗舰开放 45W~65W 公开 PPS 兼容，同时全系积极升级支持 UFCS 融合快充认证。</p>
+            </div>
+          </div>
+
+          <!-- OPPO / OnePlus / realme -->
+          <div class="brand-card brand-oppo">
+            <div class="brand-header">
+              <span class="brand-name">OPPO / 一加 / realme (欧加体系)</span>
+              <span class="brand-tag tag-oppo">VOOC / SuperVOOC</span>
+            </div>
+            <div class="brand-details">
+              <p><strong>协议演进梯队：</strong>VOOC 20W (5V/4A) → SuperVOOC 50W/65W (10V/6.5A) → 80W (11V/7.3A) → 100W/150W → 240W (24V/10A 全球手机量产最高记录)。</p>
+              <p style="margin-top: 8px;"><strong>架构核心：</strong>首创<strong>串联双电芯 (2S) 直充体系</strong>，机内不进行复杂高发热转换，两节电芯各承担 5V/6.5A 或 12V/10A，配合全链路定制接口与 VFC 极速算法。</p>
+              <p style="margin-top: 8px;"><strong>PD 兼容策略：</strong>原装生态黏性极高，普通第三方 PD 头通常回退至 9V/2A (18W) 或 9V/3A (27W)；新机型已全面拥抱 UFCS 融合快充（33W~44W）。</p>
+            </div>
+          </div>
+
+          <!-- vivo / iQOO -->
+          <div class="brand-card brand-vivo">
+            <div class="brand-header">
+              <span class="brand-name">vivo / iQOO (vivo 体系)</span>
+              <span class="brand-tag tag-vivo">FlashCharge 超快闪充</span>
+            </div>
+            <div class="brand-details">
+              <p><strong>协议演进梯队：</strong>33W/44W (11V/4A) → 66W/80W (11V/7.3A) → 120W (20V/6A) → 200W (20V/10A 全球首发 10C 极片超快充)。</p>
+              <p style="margin-top: 8px;"><strong>架构核心：</strong>三路电荷泵分流并联架构，副板隔离散热，独家定制超低内阻传输线缆与厚镀金专用插针，充电温升控制极强。</p>
+              <p style="margin-top: 8px;"><strong>PD 兼容策略：</strong>普通 PD 头多回退为 18W/27W，但部分 iQOO 旗舰机型开放了 45W~65W PPS 档位；全系标配通过 UFCS 44W 融合快充认证。</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- UFCS Section -->
+        <div class="tech-callout-box tech-callout-ufcs" style="margin-top: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+            <h5 style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+              <span>🇨🇳 UFCS 融合快充：跨品牌互通的国家行业大一统标准</span>
+            </h5>
+            <span class="brand-tag tag-ufcs">国家标准 · 跨品牌通用</span>
+          </div>
+          <p style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.7;">
+            为了彻底解决各大手机品牌私有协议互不兼容、第三方充电头“只能充自己、换手机变慢充”的环保与体验痛点，
+            由<strong>工信部指导，中国信通院 (CAICT)、电信终端产业协会 (TAF)、终端快充行业协会 (FCA)</strong> 联合华为、小米、OPPO、vivo、荣耀及国内主流芯片电源厂商共同制定了
+            <strong>《移动终端融合快速充电技术规范》(Universal Fast Charging Specification, 简称 UFCS)</strong>。
+          </p>
+
+          <div class="grid-3" style="margin-top: 20px;">
+            <div class="callout-subcard">
+              <div style="font-weight: 700; color: var(--accent-purple); font-size: 0.95rem; margin-bottom: 6px;">🔌 物理层双模通用 (CC / D+D-)</div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+                既支持 USB Type-C 接口标准的 <strong>CC 针脚数字通信</strong>，也向下兼容传统 USB-A 口的 <strong>D+/D- 针脚半双工通信</strong>。充头与手机在毫秒级内自动探测并握手，完全不破坏原生 USB-PD 规范。
+              </p>
+            </div>
+            <div class="callout-subcard">
+              <div style="font-weight: 700; color: var(--accent-purple); font-size: 0.95rem; margin-bottom: 6px;">🎛️ 连续精准调压机制</div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+                类似于 USB PD AVS/PPS，UFCS 规范了四段可编程电压区间：
+                <br>• <strong>3.4V ~ 5.5V</strong> (10mV 步进)
+                <br>• <strong>5.5V ~ 11.0V</strong> (10mV/20mV 步进 · 手机黄金直充)
+                <br>• <strong>11.0V ~ 21.0V</strong> (20mV/100mV 步进)
+                <br>• <strong>21.0V ~ 36.0V</strong> (100mV 步进 · 大功率扩展)
+              </p>
+            </div>
+            <div class="callout-subcard">
+              <div style="font-weight: 700; color: var(--accent-purple); font-size: 0.95rem; margin-bottom: 6px;">📈 三阶段跨品牌互通推进</div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+                • <strong>第一阶段 (Phase 1)：通用互通 ≤40W</strong>（当前已大面积量产，跨品牌稳定 10V/4A 或 11V/3.6A）；
+                <br>• <strong>第二阶段 (Phase 2)：推进至 65W ~ 88W</strong>；
+                <br>• <strong>第三阶段 (Phase 3)：演进至 100W+</strong> 乃至笔记本/平板大融合。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Magic USB-A 5th Pin & Custom Cables Callout -->
+        <div class="tech-callout-box" style="border-color: rgba(59, 130, 246, 0.35); margin-top: 24px;">
+          <h5 style="font-size: 1.12rem; font-weight: 800; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+            <span>🪄 物理层魔改黑科技：USB-A 接口的“第 5 根触针”与定制粗线</span>
+          </h5>
+          <div class="grid-2">
+            <div>
+              <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7;">
+                <strong>老旧 USB-A 口为何能输出 67W / 120W？（弹片加针）：</strong>
+                <br>标准的 USB-A 接口物理上只有 4 根针脚（VBUS、D-、D+、GND），没有 Type-C 关键的 CC 控制线，本来绝不可能进行复杂双向数字快充握手。
+                中国厂商（如小米、OPPO）巧妙地在 USB-A 接口母座的<strong>胶芯末端嵌入了“第 5 根特制金属探针”</strong>（如小米充电头的白色小触片）。
+                搭配原装专用 A-to-C 线缆插入时，线头的内置探片与第 5 针接触，把手机端的 CC 信号一路引回充电头主控芯片，直接复活了 Type-C 级别的数字通信握手！
+              </p>
+            </div>
+            <div>
+              <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7;">
+                <strong>定制 6A / 10A 超粗线缆与专用加密认证：</strong>
+                <br>USB-IF 标准 5A 线缆无法承受 6A~10A 持续冲击。百瓦私有快充线普遍采用 <strong>20AWG 甚至 18AWG 的极粗镀锡无氧铜线芯</strong>，插头端子采用厚镀金磷青铜触片以降低接触电阻。
+                线缆接头内封装了专用识别芯片（魔改 E-Marker），手机在接入瞬间检测线缆内阻并解密特征码，若用户使用了普通细线，手机会<strong>坚决锁死在 18W 安全慢充</strong>，防止过热熔线。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Protocol Arbitration & Fallback Ladder -->
+        <h5 style="font-size: 1.15rem; font-weight: 700; margin: 26px 0 12px; display: flex; align-items: center; gap: 8px;">
+          <span>🪜 协议仲裁与五级回退梯队：为什么 140W PD 充电器充部分手机只有 18W 或 65W？</span>
+        </h5>
+        <p style="color: var(--text-secondary); font-size: 0.92rem; margin-bottom: 18px;">
+          当手机插上任意充电器时，内部的受电芯片（Sink Controller）会按照严密的“降级梯队”自上而下进行握手探测，直到找到双方均支持的最高档位：
+        </p>
+
+        <div class="fallback-ladder">
+          <!-- Tier 1 -->
+          <div class="fallback-step step-active">
+            <div class="step-num">1</div>
+            <div class="step-info">
+              <div class="step-title-row">
+                <span class="step-title">👑 第一梯队：厂商私有加密闪充握手 (First-Party Proprietary)</span>
+                <span class="step-power-tag power-turbo">80W ~ 120W ~ 240W 满血峰值</span>
+              </div>
+              <div class="step-desc">
+                <strong>触发条件：</strong>原装私有充电器 + 原装魔改线 + 本品牌手机。
+                <br><strong>握手机制：</strong>双方硬件加密芯片在 D+/D- 或 CC 线上校验私有密钥通过，激活机内电荷泵直充或双电芯分压，跑满设备出厂标称的最大功率。
+              </div>
+            </div>
+          </div>
+
+          <!-- Tier 2 -->
+          <div class="fallback-step">
+            <div class="step-num">2</div>
+            <div class="step-info">
+              <div class="step-title-row">
+                <span class="step-title">🇨🇳 第二梯队：UFCS 融合快充握手 (Universal Fast Charging)</span>
+                <span class="step-power-tag power-ufcs">33W ~ 44W ~ 65W ~ 88W</span>
+              </div>
+              <div class="step-desc">
+                <strong>触发条件：</strong>第三方支持 UFCS 认证的充电头与数据线 + 支持 UFCS 的手机（华为、小米、OPPO、vivo等主流机型）。
+                <br><strong>握手机制：</strong>若私有加密握手超时（使用第三方充头），受电端立即发起 UFCS 探测报文，成功后在 5.5V~11V 或更高电压下以电荷泵直充跨品牌快速补电。
+              </div>
+            </div>
+          </div>
+
+          <!-- Tier 3 -->
+          <div class="fallback-step">
+            <div class="step-num">3</div>
+            <div class="step-info">
+              <div class="step-title-row">
+                <span class="step-title">⚡ 第三梯队：USB-PD PPS 可编程连续调压握手 (PD 3.0 PPS)</span>
+                <span class="step-power-tag power-pps">27W ~ 45W ~ 65W</span>
+              </div>
+              <div class="step-desc">
+                <strong>触发条件：</strong>标准 PD 充电头包含对应电压电流的 PPS APDO 档位，且手机固件开放了公开 PPS 协议栈。
+                <br><strong>握手机制：</strong>小米、三星及部分 iQOO 手机极度青睐此档，例如小米多数旗舰可直接借由 20V/3.25A PPS 跑出 65W，三星跑出 45W。
+              </div>
+            </div>
+          </div>
+
+          <!-- Tier 4 -->
+          <div class="fallback-step">
+            <div class="step-num">4</div>
+            <div class="step-info">
+              <div class="step-title-row">
+                <span class="step-title">🔋 第四梯队：USB-PD 固定档位供电 (PD Fixed PDO)</span>
+                <span class="step-power-tag power-fixed">18W ~ 27W (常见 9V/2A 或 9V/3A)</span>
+              </div>
+              <div class="step-desc">
+                <strong>触发条件：</strong>通用标准 PD 充头 + 普通 Type-C 线。
+                <br><strong>握手机制：</strong>很多华为、OPPO 手机在脱离原装与 UFCS 后未开放大电流 PPS，安全协商为标准 Fixed 9V/2A (18W) 或 9V/3A (27W)，由机内传统 Buck 降压充电。这就是 140W 充头充部分手机“只有 18W”的根本原因。
+              </div>
+            </div>
+          </div>
+
+          <!-- Tier 5 -->
+          <div class="fallback-step">
+            <div class="step-num">5</div>
+            <div class="step-info">
+              <div class="step-title-row">
+                <span class="step-title">🛡️ 第五梯队：USB BC 1.2 / DCP 基础安全供电</span>
+                <span class="step-power-tag power-base">2.5W ~ 7.5W 慢充 (5V / 0.5A ~ 1.5A)</span>
+              </div>
+              <div class="step-desc">
+                <strong>触发条件：</strong>所有数字握手协议均失败或线缆断线只留电源线。
+                <br><strong>握手机制与电流范围：</strong>充电器将 D+ 与 D- 内部短接广播 DCP（纯充电口），或由 PC 端口广播 CDP/SDP。依据 USB-IF BC 1.2 规范，标准受电上限严格为 <strong>1.5A (7.5W)</strong>，且规范强制要求支持 <strong>0.5A (500mA) 基础门槛与 VBUS 压降动态自适应回退</strong>（检测到供电端电压被拉低时自动阶梯降低取电电流至 0.5A 甚至 100mA，防止拖垮老旧电源）。坚决不升压，确保绝对零风险。（注：市面常见的 5V/2A 10W 属于安卓早期厂商的非标超载设计，并非 BC 1.2 规范定义的标准范围）。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- PART 2: WIRELESS CHARGING & MAGNETIC ECOSYSTEM -->
+      <!-- ============================================== -->
+      <div style="border-top: 2px dashed var(--border-color); padding-top: 30px; margin-bottom: 25px;">
+        <h4 style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 10px;">
+          <span>📶 第二部分：无线充电协议体系与磁吸生态深度解析</span>
+        </h4>
+        <p style="font-size: 0.92rem; color: var(--text-secondary); margin-bottom: 22px;">
+          无线充电绝非简单的“两块磁铁加线圈”。从电磁感应中的高频载波握手通信，到苹果 MagSafe 引发行业革命并催生 WPC Qi2 MPP 开放国际标准，再到中国工信部 2024 年 80W 极限解禁背后的风冷散热挑战。
+        </p>
+
+        <!-- Wireless Deep Dive Cards -->
+        <div class="grid-2" style="margin-bottom: 24px;">
+          <!-- 2.1 Communication & Modulation -->
+          <div class="tech-callout-box" style="margin-bottom: 0;">
+            <h5 style="font-size: 1.08rem; font-weight: 800; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <span>📡 能量与通信一体化：线圈如何“边充电边说话”？</span>
+            </h5>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 10px;">
+              无线充电无需任何额外物理信号线，充电底座（Tx）与手机（Rx）依靠<strong>线圈电磁场载波调制（In-Band Signaling）</strong>实现双向通信：
+            </p>
+            <ul style="padding-left: 18px; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.65;">
+              <li style="margin-bottom: 6px;">
+                <strong style="color: var(--accent-emerald);">ASK (幅移键控 · 手机 Rx → 底座 Tx)：</strong>
+                手机端通过高频开关周期性切换并联在次级线圈上的调制电容或电阻负载，这会导致初级线圈（发射座）反射阻抗发生微小改变，发射端检测到电流/电压幅度跳变并解调出二进制数据。手机每 250ms 发送一次<strong>控制误差包 (Control Error Packet, CEP)</strong>，指示底座“加压/降压/维持”。
+              </li>
+              <li>
+                <strong style="color: var(--accent-cyan);">FSK (频移键控 · 底座 Tx → 手机 Rx)：</strong>
+                发射底座通过微调逆变全桥的工作频率（如在 110kHz 与 115kHz 之间切换）来向手机发送数据报文（如广播底座能力、启动专有认证协议）。
+              </li>
+            </ul>
+          </div>
+
+          <!-- 2.2 MagSafe to Qi2 MPP -->
+          <div class="tech-callout-box" style="margin-bottom: 0;">
+            <h5 style="font-size: 1.08rem; font-weight: 800; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <span>🧲 磁吸对准革命：从 Apple MagSafe 到 WPC Qi2 MPP</span>
+            </h5>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 10px;">
+              传统平面无线充最大的痛点是<strong>“对不准”</strong>：
+            </p>
+            <ul style="padding-left: 18px; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.65;">
+              <li style="margin-bottom: 6px;">
+                <strong>偏心发热恶性循环：</strong>线圈中心一旦偏移 5~10mm，磁耦合系数急剧下跌，漏磁通在线圈周围金属件上产生严重<strong>涡流发热</strong>。机身温度飙升后触发温控降频降速，充得极慢甚至烫到断充。
+              </li>
+              <li style="margin-bottom: 6px;">
+                <strong>MagSafe 磁力自定位：</strong>苹果在 iPhone 12 上首创环形磁铁阵列，吸附瞬间中心偏差控制在 1mm 以内，将无线充电效率大幅提升至 80% 左右。
+              </li>
+              <li>
+                <strong>Qi2 MPP 跨生态大一统：</strong>苹果将 MagSafe 核心磁吸架构贡献给 WPC 联盟，演进为全球开放行业标准 <strong>MPP (Magnetic Power Profile)</strong>。Android 设备与第三方配件厂商无需经过苹果私有 MFi 认证，即可打造兼容 15W~25W 的通用磁吸快充。
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- 2.3 80W Limit & Active Cooling -->
+          <div class="tech-callout-box" style="margin-bottom: 0;">
+            <h5 style="font-size: 1.08rem; font-weight: 800; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <span>🌪️ 工信部 2024 无线电新规 80W 解禁与风冷主动散热</span>
+            </h5>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 10px;">
+              <strong>从 50W 到 80W 的法规演进：</strong>
+              此前中国工信部为保护射频天文、航空导航等无线电频段不受强磁场干扰，将移动终端无线充电额定功率上限锁死在 50W。2024 年 9 月 1 日实施的《无线电发射设备管理规定》新规<strong>正式将上限提升至 80W</strong>，促使小米 80W、华为 80W 极速无线秒充重获合规量产。
+            </p>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.65;">
+              <strong>80W 极速无线的散热物理瓶颈：</strong>
+              即使无线充电综合效率达到惊人的 85%，在 80W 输入功率下，机身内部仍将<strong>产生高达 12W 的纯热量</strong>（相当于一个烙铁在机身背部持续加热）！手机机身被动散热无法承受，因此 50W~80W 无线底座<strong>必须全部采用立式主动风冷（内置静音离心涡轮风扇直吹手机背壳）</strong>，部分甚至采用半导体 TEC 制冷片，配合手机内部 4:1 电荷泵无线降压芯片实现超高功率补能。
+            </p>
+          </div>
+
+          <!-- 2.4 Reverse Wireless Charging -->
+          <div class="tech-callout-box" style="margin-bottom: 0;">
+            <h5 style="font-size: 1.08rem; font-weight: 800; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <span>🔄 手机反向无线充电：Rx 拓扑如何反转为 Tx？</span>
+            </h5>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 10px;">
+              手机机身厚度极其有限，不可能塞入两套独立的无线充线圈。反向无线充依靠<strong>机内电源芯片的电荷双向拓扑转换</strong>：
+            </p>
+            <ul style="padding-left: 18px; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.65;">
+              <li style="margin-bottom: 6px;">
+                <strong>整流桥变全桥逆变器：</strong>正向受电时，MOSFET 组成的 H 桥作为全桥同步整流器（AC→DC）；反向供电时，受控软件逻辑将该 H 桥切换为高频逆变驱动器（DC→AC），将电池升压后的 5V/9V 直流电斩波为 110kHz~205kHz 交变电流驱动内置线圈。
+              </li>
+              <li>
+                <strong>应急补电与安全熔断：</strong>反向无线充严格遵循 WPC Qi BPP 基础规范（输出 5W~10W），手机软件设有严密防耗电保护：当手机电量低于 20%~25% 时强行自动断开，专为 AirPods、Apple Watch、华为手表耳机等随身可穿戴设备救急补电。
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Protocol Simulator -->
+    <section id="simulator">
+      <h3 class="section-title">🧪 交互式 USB-PD 供电协议模拟器</h3>
+      <p class="section-subtitle">
+        选择真实设备预设或手动拖动滑块，实时观察其触发的供电规范（PD 3.0 / PD 3.1）、功率区间（SPR / EPR）、电压档位（Fixed / PPS / AVS）及线缆认证要求。
+      </p>
+
+      <div class="simulator-box">
+        <div class="sim-header">
+          <div style="font-weight: 700; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-secondary);">
+            快速选择设备预设场景：
+          </div>
+          <div class="sim-presets">
+            <button class="preset-btn" data-v="9" data-a="3" data-mode="fixed">📱 iPhone 15/16 (27W)</button>
+            <button class="preset-btn" data-v="11" data-a="4.5" data-mode="pps">⚡ 三星 / 小米手机 PPS (45W)</button>
+            <button class="preset-btn" data-v="20" data-a="3.25" data-mode="fixed">💻 轻薄办公本 (65W)</button>
+            <button class="preset-btn" data-v="20" data-a="5" data-mode="fixed">⚡ 高性能轻薄本 (100W)</button>
+            <button class="preset-btn active" data-v="28" data-a="5" data-mode="fixed">🍏 MacBook Pro 16" (140W EPR)</button>
+            <button class="preset-btn" data-v="36" data-a="5" data-mode="avs">🖥️ 4K 设计师大屏显示器 (180W AVS)</button>
+            <button class="preset-btn" data-v="48" data-a="5" data-mode="avs">🎮 旗舰游戏本 / 移动工作站 (240W AVS)</button>
+          </div>
+        </div>
+
+        <div class="sim-controls">
+          <div class="control-group">
+            <div class="control-label">
+              <span>协商目标电压 (V)</span>
+              <span class="control-value" id="voltageDisp">28.0 V</span>
+            </div>
+            <input type="range" id="voltageSlider" min="5" max="48" step="0.1" value="28">
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:6px;">
+              <span>5V (基准)</span>
+              <span>20V (SPR上限)</span>
+              <span>48V (EPR极限)</span>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>工作电流 (A)</span>
+              <span class="control-value" id="currentDisp">5.0 A</span>
+            </div>
+            <input type="range" id="currentSlider" min="1" max="5" step="0.1" value="5">
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:6px;">
+              <span>1.0 A</span>
+              <span>3.0 A (常规线)</span>
+              <span>5.0 A (E-Marker)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sim-results">
+          <div class="result-item">
+            <span class="result-key">计算输出功率</span>
+            <span class="result-val" id="powerDisp" style="color: var(--accent-cyan);">140.0 W</span>
+          </div>
+
+          <div class="result-item">
+            <span class="result-key">功率范围类别</span>
+            <div><span class="status-badge status-epr" id="rangeBadge">EPR (扩展功率)</span></div>
+          </div>
+
+          <div class="result-item">
+            <span class="result-key">匹配供电规范</span>
+            <span class="result-val" id="specDisp">USB PD 3.1</span>
+          </div>
+
+          <div class="result-item">
+            <span class="result-key">调压控制模式</span>
+            <span class="result-val" id="modeDisp" style="color: var(--accent-amber);">Fixed 28V 档位</span>
+          </div>
+
+          <div class="result-item">
+            <span class="result-key">所需线缆认证</span>
+            <span class="result-val" id="cableDisp" style="font-size: 0.95rem;">EPR 240W (50V/5A E-Marker)</span>
+          </div>
+        </div>
+
+        <div id="powerLimitNotice" class="sim-notice">
+          <span id="noticeIcon" style="font-size: 1.15rem;">💡</span>
+          <span id="noticeText">提示：当前处于 EPR 模式 (>100W)，规范强制启用 AVS，传统 PPS 无法进入此大功率区间。</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq">
+      <h3 class="section-title">❓ 常见热点技术疑问解答 (FAQ)</h3>
+      <p class="section-subtitle">关于 USB-PD 3.x 升级中的实际兼容性、安全风险与硬件选购困惑。</p>
+
+      <div class="faq-item open">
+        <div class="faq-question">
+          <span>Q1: 为什么我的 140W/240W 充电器给手机充电只有 20W~30W？</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          充电功率由<strong>用电设备（Sink）和充电头（Source）共同协商决定</strong>，遵从“木桶效应”。
+          虽然充电头拥有 140W（28V/5A）甚至 240W 的能力，但手机受限于机身电池耐压与发热，最高只请求 9V/3A 或特定小范围 PPS 档位。
+          由于手机不能承受 28V/48V 高压，充电头会安全降落到手机支持的 20W~30W SPR 档位供电，绝对不会产生“高功率烧手机”的危险。
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>Q2: 48V 电压那么高，拔掉充电线会不会产生电火花（拉弧）烧接口？</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          确实存在这个严重风险！在 48V 直流高压下带载拔出插头极易产生空气击穿拉弧，烧毁 Type-C 引脚。
+          为此，USB PD 3.1 规范建立了极其严格的安全闭环：
+          <br>1. <strong>短针脚先断开检测</strong>：Type-C 插头的 CC 引脚比 VBUS 供电引脚短，拔出时 CC 信号先断开，电源芯片在微秒（µs）级内迅速关闭高压输出；
+          <br>2. <strong>消弧放电电容 (Snubber Capacitor)</strong>：EPR 设备端口必须配备硬件抗拉弧放电吸收网络。
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>Q3: 苹果 MacBook Pro 16 寸的 140W 快充使用的是什么协议？</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          苹果 MacBook Pro 16" (M1 Max / M2 / M3 / M4 系列) 是全球首个大规模商用 <strong>USB PD 3.1 EPR</strong> 的消费级产品。
+          其原装标配的 140W 氮化镓充电头支持标准的 <strong>28V / 5A (140W)</strong> EPR 固定档位。
+          注意：若要触发 140W 全速充电，必须搭配苹果原装的 MagSafe 3 编织线，或经过 USB-IF 认证的 240W EPR Type-C to Type-C 线缆。
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>Q4: 为什么说 AVS 会逐渐成为未来的大一统调压方案？</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          在早期，PPS 虽然调压精细（20mV），但它强行让充电头深度参与手机电池的恒流环路，导致协议状态机复杂、易受干扰断充，且无法扩展至高压笔记本。
+          AVS 采用 100mV 适度步进，坚持“充电器做高品质纯恒压输出，终端设备做自主内部分压”的现代电源架构分工。
+          随着 PD 3.2 将 AVS 覆盖至 9V~20V 的 SPR 范围，未来从 9V 到 48V 的所有精细调压设备都将统一在 AVS 旗下。
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>Q5: 为什么 PPS 的功率这么受限？为什么大功率快充必须用 AVS？</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          核心原因有三点：
+          <br>1. <strong>标准硬性封顶（止步于 SPR ≤100W）</strong>：USB-IF 制定 PD 3.1 时，明确将 PPS 限制在 SPR（最高 21V），<strong>EPR (100W~240W) 体系内完全不支持 PPS</strong>。
+          <br>2. <strong>发热与低压大电流瓶颈</strong>：PPS 核心是给手机单节/双节锂电池直充，依靠的是低压大电流（典型 3.3V~11V @ 3A~5A）。若要在低压下堆高功率，电流必须突破 5A 导致线缆和接口因 $P=I^2R$ 剧烈发热甚至烧蚀；而高压（28V~48V）并不需要 20mV 这种微弱步进。
+          <br>3. <strong>控制环路负担过重</strong>：PPS 要求充电器充当恒流 (CC) 保护源，每 10 秒必须收到手机保活指令，否则自动断电。对于需要稳定供电的游戏本、大功率显示器，这种机制极易发生因通信丢包导致的意外断电。AVS 采用纯恒压 (CV) 输出与 100mV 步进，彻底解决了大功率下的供电稳定性问题。
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>Q6: EPR 一定支持 AVS 吗？现在 SPR 中的 AVS 是可选还是强制？</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          USB-IF 规范对<strong>供电端（Source / 充电器）</strong>与<strong>受电端（Sink / 笔记本、手机等设备）</strong>有严格的区分定义：
+          <br><br><strong>1. EPR 体系中的 AVS 规则（100W ~ 240W）：</strong>
+          <br>• <strong>EPR 充电器（Source）：必须强制支持（Mandatory）！</strong> 根据 USB PD 3.1 供电规则，任何功率大于 100W 的 EPR 充电头，除了提供对应的固定档位（Fixed 28V/36V/48V）外，<strong>必须强制广播对应电压范围的 AVS APDO</strong>（如 15V~28V 或 15V~48V）。不具备 AVS 广播能力的充电器无法通过 USB-IF 认证。
+          <br>• <strong>EPR 受电设备（Sink）：可选支持（Optional）！</strong> 设备端完成 EPR 握手后，并不强制使用 AVS。例如苹果 MacBook Pro 16" 普遍直接向 140W 充电头请求标准的 28V/5A Fixed 固定档；当然，设备也可以根据需要自主请求 AVS 动态调压档。
+          <br><br><strong>2. SPR 体系中的 AVS 规则（≤ 100W，PD 3.2 演进）：</strong>
+          <br>• <strong>充电器（Source）功率 &gt; 27W：强制支持（Mandatory）！</strong> 在最新的 USB PD 3.2 规范中，为了推动生态统一并逐步取代碎片化的 PPS，凡是额定功率大于 27W 的 SPR 充电器（如常见的 30W、45W、65W、100W 充头），必须强制支持 9V~20V 的 SPR AVS。
+          <br>• <strong>充电器（Source）功率 ≤ 27W：可选支持（Optional）。</strong>
+          <br>• <strong>受电设备（Sink）：可选支持（Optional）。</strong> 手机或平板可自由选择是否向充电器请求 SPR AVS 档位。
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>Q7: SPR 和 EPR 的关键区别只是线材吗？</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          <strong>不是，线材只是决定能否开启高功率的硬件前提，两者的本质区别是整套供电电压架构、防电弧安全机制与协议状态机的全面换代：</strong>
+          <br><br><strong>1. 为什么线材给人感受最深？（它是硬件安全防线）：</strong>
+          <br>线缆内置的 E-Marker 芯片承担着关键的安全保护与规格把关职责。EPR 线缆必须具备 50V 耐压认证，并在 E-Marker 中声明 EPR 供电能力。如果充电头和电脑都支持 240W，但插了一根普通的 100W 线，握手协议会<strong>将功率严格限制在 ≤100W SPR 范围</strong>，坚决不升压。因此用户直观体感上常常觉得“换根线就能上 140W/240W，区别全在线上”。
+          <br><br><strong>2. 真正的四大底层本质区别：</strong>
+          <br>• <strong>电压体系与发热物理学（$P=I^2R$）：</strong> SPR 顶格限制在 20V；而 EPR 将电压大幅跃升至 28V、36V、48V。保持 5A 安全电流不变的前提下，通过翻倍电压将功率从 100W 推到 240W。若不升压而靠拉大电流（如 12A），根据焦耳定律，线材触点发热将暴增近 6 倍，极易起火熔化。
+          <br>• <strong>48V 拔出防拉弧（Arc Suppression）：</strong> 48V 直流电在带载热拔出时会产生足以烧熔镀金针脚的高温电弧。EPR 强制要求充电头与受电端主板配备微秒（µs）级快速关断芯片（短针 CC 脚先断开即刻断电）与 Snubber 消弧吸收网络，SPR 完全没有这种高压防护负担。
+          <br>• <strong>独立的状态机与心跳机制：</strong> EPR 拥有专属的 <code>EPR_Mode</code> Entry / Exit 显式进退握手，以及持续的 EPR Keep-Alive 周期性保活机制，防止意外脱缰输出高压。
+          <br>• <strong>连续调压协议换代：</strong> 彻底弃用 SPR 时代用于手机直充的 PPS（限制 ≤100W），全面改用适合大功率纯恒压输出的 <strong>AVS（100mV 步进）</strong>。
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>Q8: 为什么国产手机宣称 120W/240W 秒充，用常规 140W PD 充电器只有 18W 或 65W？</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          核心原因在于<strong>握手协议与机内硬件拓扑的木桶效应</strong>：
+          <br>1. <strong>私有密钥未匹配</strong>：手机的 120W/240W 属于品牌私有闪充，依赖原装充电头、魔改线缆与手机三端的加密握手。第三方 140W PD 充电器没有华为/小米/OPPO/vivo 的私有通信密钥，直接跳过 Tier 1 满血档位。
+          <br>2. <strong>各品牌对通用标准开放度不同</strong>：
+          <br>• <strong>小米 / 三星等</strong>：系统底层开放了标准 PPS 协议栈，若第三方 PD 头支持 20V/3.25A PPS 或 11V/5A PPS，小米旗舰能跑出 <strong>50W~65W</strong>，三星可跑 <strong>45W</strong>。
+          <br>• <strong>华为 / 荣耀 / OPPO 等</strong>：出于保护原装生态与温控策略，对纯 PD 协议普遍仅请求标准的 Fixed 9V/2A (18W) 或 9V/3A (27W) 固定档，因此即便插上 140W 充头也只能跑 <strong>18W~27W</strong>。
+          <br>3. <strong>破局之道</strong>：选择支持 <strong>UFCS 融合快充</strong> 的第三方充电头，各品牌手机可直接跃升至 <strong>33W~44W~66W</strong> 跨品牌快速充电。
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>Q9: UFCS 融合快充和 USB-PD 会互相取代吗？普通用户该怎么选充电头？</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          <strong>不会互相取代，而是高度互补的“双轨并行”关系：</strong>
+          <br>1. <strong>USB-PD 统治全球与跨设备大生态</strong>：笔记本电脑（MacBook、ThinkPad、Dell）、掌机（Switch、Steam Deck）、平板（iPad）以及国际品牌手机（iPhone、Pixel、三星）全部深度绑定 USB-PD。PD 3.1 EPR (140W~240W) 和 AVS 是 PC 大功率供电的唯一全球公认标准。
+          <br>2. <strong>UFCS 破解中国手机生态壁垒</strong>：主要解决国内各大品牌手机（华为/小米/OPPO/vivo/荣耀）互不兼容的顽疾，在手机端以 40W~65W+ 填补私有协议与传统 PD 慢充之间的巨大鸿沟。
+          <br>3. <strong>选购建议</strong>：数码玩家和差旅人士建议优先选购标称 <strong>“支持 USB PD 3.0/3.1 + UFCS 融合快充” 的双认证多口氮化镓充头</strong>。这类充头充笔记本走百瓦 PD，充国产手机走 UFCS 40W~65W，真正实现“一头走天下”。
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">
+          <span>Q10: 为什么协议中把充电器叫 Source，手机/电脑等被充设备叫 Sink（水槽）？</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-answer">
+          在日常英语中，<strong>Sink</strong> 最常见的含义是<strong>“水槽、洗手池”</strong>，作为动词是<strong>“下沉”</strong>，初看确实容易让人困惑。这一称谓源自电气工程学经典的<strong>“水流模型（Fluid Metaphor）”</strong>：
+          <br>1. <strong>Source（源 / 泉眼）</strong>：在电路理论中，电荷源源不断涌出的地方被称为“电流源（Current Source）”，充电器就是向 VBUS 管道持续注入能量的源头（供电端）。
+          <br>2. <strong>Sink（汇 / 水槽）</strong>：就像厨房水槽（Kitchen Sink）承接并汇集水流，电路中吸收、消耗或蓄存电荷能量的负载被称为“电流汇（Current Sink）”。手机内部的锂电池就是一个承接并储存电能的“蓄水容器”（受电端）。
+          <br>3. <strong>DRP（双角色电源 / 蓄水库）</strong>：像充电宝或笔记本电脑这类设备，插插座充电时是 <strong>Sink（接水蓄电）</strong>；拔下来给手机放电时又变身为 <strong>Source（放水供电）</strong>，故称 <strong>Dual-Role Power (DRP)</strong>。
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>USB Power Delivery 知识指南 · 遵循 USB-IF 官方 PD 3.0 / PD 3.1 / PD 3.2 规范体系</p>
+      <p style="margin-top: 6px; font-size: 0.8rem;">
+        涵盖标准：SPR (≤100W) · EPR (≤240W) · AVS (100mV步进) · PPS (20mV步进)
+      </p>
+    </div>
+  </footer>
+
+  <script src="js/common.js"></script>
+  <script>
+    // Theme Switcher
+    const themeBtn = document.getElementById('themeToggle');
+    const htmlEl = document.documentElement;
+
+    const savedTheme = localStorage.getItem('theme') || 
+      (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    setTheme(savedTheme);
+
+    themeBtn.addEventListener('click', () => {
+      const currentTheme = htmlEl.getAttribute('data-theme') || 'dark';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      setTheme(newTheme);
+    });
+
+    function setTheme(theme) {
+      if (theme === 'light') {
+        htmlEl.setAttribute('data-theme', 'light');
+        themeBtn.textContent = '☀️';
+        localStorage.setItem('theme', 'light');
+      } else {
+        htmlEl.removeAttribute('data-theme');
+        themeBtn.textContent = '🌙';
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+
+    // Cross-page navigation dropdown toggle (for touch/click & accessibility)
+    const crossDropdown = document.getElementById('crossNavDropdown');
+    if (crossDropdown) {
+      const crossTrigger = crossDropdown.querySelector('.cross-nav-trigger');
+      crossTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        crossDropdown.classList.toggle('open');
+        crossTrigger.setAttribute('aria-expanded', crossDropdown.classList.contains('open'));
+      });
+      document.addEventListener('click', (e) => {
+        if (!crossDropdown.contains(e.target)) {
+          crossDropdown.classList.remove('open');
+          crossTrigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          crossDropdown.classList.remove('open');
+          crossTrigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
+    // FAQ Accordion
+    document.querySelectorAll('.faq-question').forEach(header => {
+      header.addEventListener('click', () => {
+        const item = header.parentElement;
+        item.classList.toggle('open');
+      });
+    });
+
+    // Simulator Logic
+    const vSlider = document.getElementById('voltageSlider');
+    const cSlider = document.getElementById('currentSlider');
+    const vDisp = document.getElementById('voltageDisp');
+    const cDisp = document.getElementById('currentDisp');
+    const pDisp = document.getElementById('powerDisp');
+    const rangeBadge = document.getElementById('rangeBadge');
+    const specDisp = document.getElementById('specDisp');
+    const modeDisp = document.getElementById('modeDisp');
+    const cableDisp = document.getElementById('cableDisp');
+    const noticeIcon = document.getElementById('noticeIcon');
+    const noticeText = document.getElementById('noticeText');
+    const presetBtns = document.querySelectorAll('.preset-btn');
+
+    function updateSimulator(overrideMode = null) {
+      const v = parseFloat(vSlider.value);
+      const a = parseFloat(cSlider.value);
+      const power = v * a;
+
+      vDisp.textContent = v.toFixed(1) + ' V';
+      cDisp.textContent = a.toFixed(1) + ' A';
+      pDisp.textContent = power.toFixed(1) + ' W';
+
+      const isEPR = (v > 20.0 || power > 100.0);
+
+      // Range classification
+      if (isEPR) {
+        rangeBadge.className = 'status-badge status-epr';
+        rangeBadge.textContent = 'EPR (扩展功率范围)';
+        specDisp.textContent = 'USB PD 3.1 / 3.2';
+        cableDisp.textContent = 'EPR 240W 专用线 (50V/5A E-Marker)';
+      } else {
+        rangeBadge.className = 'status-badge status-spr';
+        rangeBadge.textContent = 'SPR (标准功率范围)';
+        specDisp.textContent = 'USB PD 3.0 / 2.0';
+        if (a > 3.0) {
+          cableDisp.textContent = '5A 线缆 (现行 240W EPR 认证线 或 100W 遗留旧线)';
+        } else {
+          cableDisp.textContent = '普通 3A Type-C 线 (≤60W)';
+        }
+      }
+
+      // Mode detection & PPS Power Limitation Enforcement
+      if (overrideMode === 'pps') {
+        if (!isEPR && v <= 21.0) {
+          modeDisp.textContent = 'PPS 动态调压 (20mV 步进 · ≤100W)';
+          modeDisp.style.color = 'var(--accent-emerald)';
+          noticeIcon.textContent = '⚡';
+          noticeText.innerHTML = '<strong>PPS 调压模式：</strong>专为手机直充设计（恒压+恒流），<strong>功率严格受限在 ≤100W（实际主流多 ≤45W~65W）</strong>，无法用于大功率电脑。';
+        } else {
+          modeDisp.textContent = 'EPR AVS 调压 (⚠️ PPS 不支持大功率)';
+          modeDisp.style.color = 'var(--accent-rose)';
+          noticeIcon.textContent = '🚫';
+          noticeText.innerHTML = '<strong style="color:var(--accent-rose);">PPS 功率超限：</strong>USB-IF 规范严禁 PPS 进入 EPR。当前 >100W 或 >21V 已被系统自动转为 AVS 调压模式！';
+        }
+      } else if (overrideMode === 'avs' || (v > 20 && ![28, 36, 48].includes(Math.round(v)))) {
+        modeDisp.textContent = 'AVS 连续可调 (100mV 步进)';
+        modeDisp.style.color = 'var(--accent-amber)';
+        noticeIcon.textContent = '🚀';
+        noticeText.innerHTML = '<strong>AVS 高功率模式：</strong>突破 PPS 限制，原生支持 <strong>100W~240W</strong> 高压大功率，纯恒压 (CV) 高效分流。';
+      } else {
+        // Check if close to fixed profiles
+        const fixedLevels = [5, 9, 15, 20, 28, 36, 48];
+        const matched = fixedLevels.find(level => Math.abs(level - v) < 0.15);
+        if (matched) {
+          modeDisp.textContent = `Fixed ${matched}V 固定档位`;
+          modeDisp.style.color = 'var(--accent-blue)';
+          if (isEPR) {
+            noticeIcon.textContent = '🚀';
+            noticeText.innerHTML = `<strong>EPR Fixed ${matched}V：</strong>大功率固定档位，为高性能笔电提供稳定电力。`;
+          } else {
+            noticeIcon.textContent = '🔋';
+            noticeText.innerHTML = `<strong>SPR Fixed ${matched}V：</strong>传统标准固定档位，普及度最高。`;
+          }
+        } else {
+          if (v <= 20) {
+            modeDisp.textContent = 'SPR AVS / PPS 调压 (≤100W)';
+            modeDisp.style.color = 'var(--accent-emerald)';
+            noticeIcon.textContent = '💡';
+            noticeText.innerHTML = '<strong>SPR 可调电压：</strong>100W 以内精细电压调节，兼顾手机与便携设备。';
+          } else {
+            modeDisp.textContent = 'EPR AVS 动态调压 (100mV 步进)';
+            modeDisp.style.color = 'var(--accent-amber)';
+            noticeIcon.textContent = '🚀';
+            noticeText.innerHTML = '<strong>EPR AVS 高压母线：</strong>超越传统 PPS 极限，可直达 240W 澎湃输出。';
+          }
+        }
+      }
+    }
+
+    vSlider.addEventListener('input', () => {
+      presetBtns.forEach(btn => btn.classList.remove('active'));
+      updateSimulator();
+    });
+
+    cSlider.addEventListener('input', () => {
+      presetBtns.forEach(btn => btn.classList.remove('active'));
+      updateSimulator();
+    });
+
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        presetBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const v = parseFloat(btn.dataset.v);
+        const a = parseFloat(btn.dataset.a);
+        const mode = btn.dataset.mode;
+
+        vSlider.value = v;
+        cSlider.value = a;
+        updateSimulator(mode);
+      });
+    });
+
+    // Initial update
+    updateSimulator();
+  </script>
+</body>
+</html>
